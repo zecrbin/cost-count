@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: cost-count-backend
+  profiles:
+    default: local
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  file:
+    name: logs/cost-count.log
+  logback:
+    rollingpolicy:
+      file-name-pattern: logs/archive/cost-count.%d{yyyy-MM-dd}.%i.log.gz
+      max-history: 30
+  level:
+    com.costcount: info

@@ -1,0 +1,37 @@
+# Maven build output
+target/
+
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+
+# Runtime logs
+logs/
+*.log
+
+# Local database files
+data/
+*.mv.db
+*.lock.db
+*.trace.db
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Java runtime artifacts
+*.class
+hs_err_pid*
+replay_pid*
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
