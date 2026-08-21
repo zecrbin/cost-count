@@ -14,7 +14,7 @@ public class TransactionVO {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     @Schema(description = "记录ID", example = "1")
     private Long id;
-    @Schema(description = "类型，INCOME-收入，EXPENSE-支出", example = "EXPENSE")
+    @Schema(description = "类型，INCOME-收入，EXPENSE-支出，TRANSFER-转账", example = "EXPENSE")
     private String type;
     @Schema(description = "金额", example = "36.50")
     private BigDecimal amount;
@@ -30,6 +30,9 @@ public class TransactionVO {
     private Long accountId;
     @Schema(description = "账户名称", example = "招商银行")
     private String accountName;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    @Schema(description = "转入账户ID；仅转账记录有值", example = "2")
+    private Long targetAccountId;
     @Schema(description = "交易日期", example = "2026-08-21")
     private LocalDate transactionDate;
     @Schema(description = "交易对象", example = "盒马鲜生")

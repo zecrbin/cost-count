@@ -8,7 +8,7 @@ import java.time.LocalDate;
 @Data
 @Schema(description = "收支记录查询条件")
 public class TransactionQueryDTO {
-    @Schema(description = "收支类型，INCOME-收入，EXPENSE-支出", example = "EXPENSE")
+    @Schema(description = "账目类型，INCOME-收入，EXPENSE-支出，TRANSFER-转账", example = "EXPENSE")
     private String type;
     @Schema(description = "分类ID", example = "1")
     private Long categoryId;

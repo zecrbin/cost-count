@@ -8,6 +8,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @TableName("category")
 public class Category extends BaseEntity {
+    private Long parentId;
     private String name;
     private String type;
     private String icon;

@@ -12,13 +12,9 @@ import java.math.BigDecimal;
 @Data
 @Schema(description = "账户新增或修改请求")
 public class AccountSaveDTO {
-    @NotBlank(message = "账户名称不能为空")
-    @Size(max = 30, message = "账户名称最多30个字符")
-    @Schema(description = "账户名称", example = "招商银行")
-    private String name;
-
     @NotBlank(message = "账户类型不能为空")
-    @Schema(description = "账户类型", example = "储蓄卡")
+    @Size(max = 30, message = "账户类型最多30个字符")
+    @Schema(description = "账户类型，同时作为账户名称，例如微信、支付宝、建设银行、花呗", example = "招商银行")
     private String type;
 
     @NotNull(message = "账户余额不能为空")

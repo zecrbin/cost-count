@@ -15,6 +15,7 @@ public class TransactionRecord extends BaseEntity {
     private BigDecimal amount;
     private Long categoryId;
     private Long accountId;
+    private Long targetAccountId;
     private LocalDate transactionDate;
     private String merchant;
     private String note;

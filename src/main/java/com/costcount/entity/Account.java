@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 public class Account extends BaseEntity {
     private String name;
     private String type;
+    private String nature;
     private BigDecimal balance;
     private BigDecimal initialBalance;
     private String color;

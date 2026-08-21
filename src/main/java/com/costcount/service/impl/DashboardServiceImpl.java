@@ -44,7 +44,10 @@ public class DashboardServiceImpl implements DashboardService {
         BigDecimal income = sumByType(safeRecords, "INCOME");
         BigDecimal expense = sumByType(safeRecords, "EXPENSE");
         List<Account> accounts = accountService.lambdaQuery().list();
-        BigDecimal totalBalance = Optional.ofNullable(accounts).orElseGet(List::of).stream()
+        List<Account> safeAccounts = Optional.ofNullable(accounts).orElseGet(List::of);
+        BigDecimal assetBalance = safeAccounts.stream().filter(item -> !"LIABILITY".equals(item.getNature()))
+            .map(Account::getBalance).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal liabilityBalance = safeAccounts.stream().filter(item -> "LIABILITY".equals(item.getNature()))
             .map(Account::getBalance).reduce(BigDecimal.ZERO, BigDecimal::add);
         List<Category> categories = categoryService.lambdaQuery().list();
         Map<Long, Category> categoryMap = Optional.ofNullable(categories).orElseGet(List::of).stream()
@@ -58,7 +61,8 @@ public class DashboardServiceImpl implements DashboardService {
         recentQuery.setPageSize(8);
         recentQuery.setParams(new TransactionQueryDTO());
         List<TransactionVO> recent = transactionRecordService.pageList(recentQuery).records();
-        return new DashboardVO(totalBalance, income, expense, income.subtract(expense), safeRecords.size(), stats, recent);
+        return new DashboardVO(assetBalance, liabilityBalance, assetBalance.subtract(liabilityBalance),
+            income, expense, income.subtract(expense), safeRecords.size(), stats, recent);
     }
 
     private BigDecimal sumByType(List<TransactionRecord> records, String type) {
