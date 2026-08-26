@@ -6,6 +6,10 @@ spring:
     name: cost-count-backend
   profiles:
     default: local
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 150MB
 
 mybatis-plus:
   configuration:
@@ -27,3 +31,11 @@ logging:
       max-history: 30
   level:
     com.costcount: info
+
+app:
+  ocr:
+    # 每批图片启动一个 OCR Worker，整批识别后退出并释放模型和显存。
+    python: ${OCR_PYTHON:python}
+    script: ${OCR_SCRIPT:scripts/rapidocr.py}
+    use-cuda: ${OCR_USE_CUDA:true}
+    timeout-seconds: ${OCR_TIMEOUT_SECONDS:120}

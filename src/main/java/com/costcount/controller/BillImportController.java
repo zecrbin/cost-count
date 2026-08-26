@@ -31,7 +31,7 @@ public class BillImportController {
         return R.ok(billImportService.previewExcel(file));
     }
 
-    @Operation(summary = "使用本机 Windows OCR 识别账单截图")
+    @Operation(summary = "一次启动本地 OCR 模型批量识别账单截图")
     @PostMapping(value = "/image/recognize", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public R<BillImportPreviewVO> recognizeImages(@RequestPart("files") MultipartFile[] files) {
         return R.ok(billImportService.recognizeImages(files));

@@ -29,7 +29,7 @@ public class AccountController {
     @GetMapping("/list")
     public R<List<AccountVO>> list() { return R.ok(accountService.listAll()); }
 
-    @Operation(summary = "新增账户", description = "账户类型同时作为账户名称，首次新增时 balance 作为初始金额")
+    @Operation(summary = "新增账户", description = "账户名称可自由填写，账户性质由 nature 明确指定")
     @PostMapping
     public R<String> create(@RequestBody @Valid AccountSaveDTO dto) { return R.ok(accountService.create(dto)); }
 

@@ -28,7 +28,7 @@ public class TransactionVO {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     @Schema(description = "账户ID", example = "1")
     private Long accountId;
-    @Schema(description = "账户名称", example = "招商银行")
+    @Schema(description = "账户名称", example = "日常消费账户")
     private String accountName;
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     @Schema(description = "转入账户ID；仅转账记录有值", example = "2")

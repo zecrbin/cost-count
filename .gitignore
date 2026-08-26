@@ -25,6 +25,9 @@ data/
 .env
 .env.*
 !.env.example
+.venv-ocr/
+__pycache__/
+*.py[cod]
 
 # Java runtime artifacts
 *.class

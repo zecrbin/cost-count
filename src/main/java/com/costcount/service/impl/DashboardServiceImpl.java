@@ -5,6 +5,7 @@ import com.costcount.dto.TransactionQueryDTO;
 import com.costcount.entity.Account;
 import com.costcount.entity.Category;
 import com.costcount.entity.TransactionRecord;
+import com.costcount.enums.AccountNature;
 import com.costcount.service.AccountService;
 import com.costcount.service.CategoryService;
 import com.costcount.service.DashboardService;
@@ -45,9 +46,9 @@ public class DashboardServiceImpl implements DashboardService {
         BigDecimal expense = sumByType(safeRecords, "EXPENSE");
         List<Account> accounts = accountService.lambdaQuery().list();
         List<Account> safeAccounts = Optional.ofNullable(accounts).orElseGet(List::of);
-        BigDecimal assetBalance = safeAccounts.stream().filter(item -> !"LIABILITY".equals(item.getNature()))
+        BigDecimal assetBalance = safeAccounts.stream().filter(item -> item.getNature() == AccountNature.ASSET)
             .map(Account::getBalance).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal liabilityBalance = safeAccounts.stream().filter(item -> "LIABILITY".equals(item.getNature()))
+        BigDecimal liabilityBalance = safeAccounts.stream().filter(item -> item.getNature() == AccountNature.LIABILITY)
             .map(Account::getBalance).reduce(BigDecimal.ZERO, BigDecimal::add);
         List<Category> categories = categoryService.lambdaQuery().list();
         Map<Long, Category> categoryMap = Optional.ofNullable(categories).orElseGet(List::of).stream()

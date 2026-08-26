@@ -7,6 +7,7 @@ import com.costcount.dto.TransactionSaveDTO;
 import com.costcount.entity.Account;
 import com.costcount.entity.Category;
 import com.costcount.entity.TransactionRecord;
+import com.costcount.enums.AccountNature;
 import com.costcount.enums.TransactionType;
 import com.costcount.exception.BizException;
 import com.costcount.mapper.AccountMapper;
@@ -153,7 +154,7 @@ public class TransactionRecordServiceImpl extends MPJBaseServiceImpl<Transaction
     }
 
     private void adjustBalance(Account account, TransactionType type, BigDecimal amount) {
-        boolean liability = "LIABILITY".equals(account.getNature());
+        boolean liability = account.getNature() == AccountNature.LIABILITY;
         boolean increase = type == TransactionType.INCOME && !liability || type == TransactionType.EXPENSE && liability;
         account.setBalance(increase ? account.getBalance().add(amount) : account.getBalance().subtract(amount));
         accountMapper.updateById(account);
@@ -193,13 +194,13 @@ public class TransactionRecordServiceImpl extends MPJBaseServiceImpl<Transaction
     }
 
     private void applyOutgoing(Account account, BigDecimal amount) {
-        boolean liability = "LIABILITY".equals(account.getNature());
+        boolean liability = account.getNature() == AccountNature.LIABILITY;
         account.setBalance(liability ? account.getBalance().add(amount) : account.getBalance().subtract(amount));
         accountMapper.updateById(account);
     }
 
     private void applyIncoming(Account account, BigDecimal amount) {
-        boolean liability = "LIABILITY".equals(account.getNature());
+        boolean liability = account.getNature() == AccountNature.LIABILITY;
         account.setBalance(liability ? account.getBalance().subtract(amount) : account.getBalance().add(amount));
         accountMapper.updateById(account);
     }

@@ -2,7 +2,6 @@ package com.costcount.service.impl;
 
 import com.costcount.dto.AccountSaveDTO;
 import com.costcount.entity.Account;
-import com.costcount.enums.AccountNature;
 import com.costcount.exception.BizException;
 import com.costcount.mapper.AccountMapper;
 import com.costcount.service.AccountService;
@@ -36,8 +35,9 @@ public class AccountServiceImpl extends MPJBaseServiceImpl<AccountMapper, Accoun
     public String create(AccountSaveDTO dto) {
         Account account = new Account();
         BeanUtils.copyProperties(dto, account);
-        account.setName(dto.getType());
-        account.setNature(AccountNature.fromAccountType(dto.getType()).name());
+        account.setName(dto.getName());
+        account.setType(dto.getName());
+        account.setNature(dto.getNature());
         account.setInitialBalance(dto.getBalance());
         account.setColor(dto.getColor() == null ? "#3154E5" : dto.getColor());
         account.setSort(Math.toIntExact(count() + 1));
@@ -53,8 +53,9 @@ public class AccountServiceImpl extends MPJBaseServiceImpl<AccountMapper, Accoun
             throw new BizException(404, "账户不存在");
         }
         BeanUtils.copyProperties(dto, account, "initialBalance");
-        account.setName(dto.getType());
-        account.setNature(AccountNature.fromAccountType(dto.getType()).name());
+        account.setName(dto.getName());
+        account.setType(dto.getName());
+        account.setNature(dto.getNature());
         updateById(account);
         return id.toString();
     }

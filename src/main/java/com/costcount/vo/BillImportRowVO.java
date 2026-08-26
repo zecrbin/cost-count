@@ -24,7 +24,7 @@ public class BillImportRowVO {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     @Schema(description = "匹配到的账户ID", example = "1")
     private Long accountId;
-    @Schema(description = "原始或匹配后的账户名称", example = "微信")
+    @Schema(description = "原始或匹配后的账户名称", example = "日常消费账户")
     private String accountName;
     @Schema(description = "交易日期", example = "2026-08-21")
     private LocalDate transactionDate;
