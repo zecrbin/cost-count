@@ -23,7 +23,7 @@ public class AccountServiceImpl extends MPJBaseServiceImpl<AccountMapper, Accoun
 
     @Override
     public List<AccountVO> listAll() {
-        List<Account> accounts = lambdaQuery().orderByAsc(Account::getSort).orderByAsc(Account::getId).list();
+        List<Account> accounts = lambdaQuery().orderByAsc(Account::getSort).orderByDesc(Account::getCreatedTime).list();
         return Optional.ofNullable(accounts).orElseGet(List::of).stream().map(account -> {
             AccountVO vo = new AccountVO();
             BeanUtils.copyProperties(account, vo);
