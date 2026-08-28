@@ -15,11 +15,13 @@ import java.util.Objects;
 public class GlobalExceptionHandler {
     @ExceptionHandler(BizException.class)
     public R<Void> handleBizException(BizException exception) {
+        log.error("业务异常", exception);
         return R.fail(exception.getCode(), exception.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public R<Void> handleValidException(MethodArgumentNotValidException exception) {
+        log.error("参数校验失败", exception);
         String message = exception.getBindingResult().getFieldErrors().stream()
             .map(FieldError::getDefaultMessage).filter(Objects::nonNull).findFirst().orElse("参数校验失败");
         return R.fail(400, message);
@@ -27,6 +29,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public R<Void> handleMessageNotReadableException(HttpMessageNotReadableException exception) {
+        log.error("请求参数格式错误", exception);
         return R.fail(400, "请求参数格式错误，请检查枚举值和字段类型");
     }
 

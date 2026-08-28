@@ -9,6 +9,6 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
     @Bean
     public OpenAPI costCountOpenApi() {
-        return new OpenAPI().info(new Info().title("Cost Count API").description("个人记账平台接口文档").version("0.1.0"));
+        return new OpenAPI().info(new Info().title("Backend API").description("通用后端接口文档").version("0.1.0"));
     }
 }

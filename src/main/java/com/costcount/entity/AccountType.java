@@ -8,38 +8,23 @@ import com.costcount.common.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName("cc_account")
-public class Account extends BaseEntity {
+@TableName("cc_account_type")
+public class AccountType extends BaseEntity {
 
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    private Long accTypeId;
+    private Long accProviderId;
 
-    private String accName;
+    private String typeCode;
 
-    private String accTailNum;
+    private String typeName;
 
-    /**
-     * DEBIT：当前实际余额
-     * CREDIT：当前待还金额
-     */
-    private BigDecimal balance;
-
-    /**
-     * 信用额度，仅 CREDIT 使用
-     */
-    private BigDecimal creditLimit;
-
-    /**
-     * 理想信用额度，仅 CREDIT 使用
-     */
-    private BigDecimal idealCreditLimit;
+    private String icon;
 
     private Integer sort;
 

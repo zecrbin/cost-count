@@ -1,32 +1,44 @@
 package com.costcount.dto;
 
-import com.costcount.enums.AccountNature;
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
-@Schema(description = "账户新增或修改请求")
 public class AccountSaveDTO {
+
+    @NotNull(message = "账户类型不能为空")
+    private Long accTypeId;
+
     @NotBlank(message = "账户名称不能为空")
-    @Size(max = 20, message = "账户名称最多20个字符")
-    @Schema(description = "自定义账户名称，不受预设类型限制", example = "日常消费账户")
-    private String name;
+    @Size(max = 64, message = "账户名称不能超过64个字符")
+    private String accName;
 
-    @NotNull(message = "账户性质不能为空")
-    @Schema(description = "账户性质：ASSET-资产账户，LIABILITY-负债账户", example = "ASSET")
-    private AccountNature nature;
+    @Pattern(
+        regexp = "^\\d{4}$",
+        message = "账户尾号必须为4位数字"
+    )
+    private String accTailNum;
 
-    @NotNull(message = "账户余额不能为空")
-    @DecimalMin(value = "0", message = "账户余额不能小于0")
-    @Schema(description = "当前余额，首次新增时作为初始金额", example = "12580.50")
+    @NotNull(message = "账户金额不能为空")
+    @DecimalMin(value = "0.00", message = "账户金额不能小于0")
     private BigDecimal balance;
 
-    @Schema(description = "账户标识颜色", example = "#3154E5")
-    private String color;
+    @DecimalMin(value = "0.00", message = "信用额度不能小于0")
+    private BigDecimal creditLimit;
+
+    @DecimalMin(value = "0.00", message = "理想信用额度不能小于0")
+    private BigDecimal idealCreditLimit;
+
+    private Integer sort = 0;
+
+    private Integer status = 1;
+
+    @Size(max = 256)
+    private String remark;
 }

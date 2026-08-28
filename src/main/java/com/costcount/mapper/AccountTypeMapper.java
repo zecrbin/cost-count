@@ -1,10 +1,10 @@
 package com.costcount.mapper;
 
-import com.costcount.entity.Account;
+import com.costcount.entity.AccountType;
 import com.github.yulichang.base.MPJBaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface AccountMapper
-    extends MPJBaseMapper<Account> {
+public interface AccountTypeMapper
+    extends MPJBaseMapper<AccountType> {
 }

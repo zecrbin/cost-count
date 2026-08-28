@@ -1,62 +1,61 @@
 package com.costcount.service.impl;
 
-import com.costcount.dto.AccountSaveDTO;
 import com.costcount.entity.Account;
-import com.costcount.exception.BizException;
 import com.costcount.mapper.AccountMapper;
+import com.costcount.mapper.AccountTypeMapper;
 import com.costcount.service.AccountService;
 import com.costcount.vo.AccountVO;
 import com.github.yulichang.base.MPJBaseServiceImpl;
-import jakarta.annotation.Resource;
-import org.springframework.beans.BeanUtils;
+import com.github.yulichang.toolkit.JoinWrappers;
+import com.github.yulichang.wrapper.MPJLambdaWrapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
-import java.util.Optional;
 
 @Service
-public class AccountServiceImpl extends MPJBaseServiceImpl<AccountMapper, Account> implements AccountService {
-    @Resource
-    private AccountMapper accountMapper;
+@RequiredArgsConstructor
+public class AccountServiceImpl
+    extends MPJBaseServiceImpl<AccountMapper, Account>
+        implements AccountService {
 
-    @Override
-    public List<AccountVO> listAll() {
-        List<Account> accounts = lambdaQuery().orderByAsc(Account::getSort).orderByDesc(Account::getCreatedTime).list();
-        return Optional.ofNullable(accounts).orElseGet(List::of).stream().map(account -> {
-            AccountVO vo = new AccountVO();
-            BeanUtils.copyProperties(account, vo);
-            return vo;
-        }).toList();
-    }
+    private static final String DEBIT = "DEBIT";
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public String create(AccountSaveDTO dto) {
-        Account account = new Account();
-        BeanUtils.copyProperties(dto, account);
-        account.setName(dto.getName());
-        account.setType(dto.getName());
-        account.setNature(dto.getNature());
-        account.setInitialBalance(dto.getBalance());
-        account.setColor(dto.getColor() == null ? "#3154E5" : dto.getColor());
-        account.setSort(Math.toIntExact(count() + 1));
-        accountMapper.insert(account);
-        return account.getId().toString();
-    }
+    private static final String CREDIT = "CREDIT";
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public String update(Long id, AccountSaveDTO dto) {
-        Account account = getById(id);
-        if (account == null) {
-            throw new BizException(404, "账户不存在");
+    private final AccountMapper accountMapper;
+
+    private final AccountTypeMapper accountTypeMapper;
+
+    private void fillCalculatedFields(
+        List<AccountVO> accounts
+    ) {
+
+        for (AccountVO account : accounts) {
+
+            if (!CREDIT.equals(account.getTypeCode())) {
+                account.setAvailableCredit(null);
+                continue;
+            }
+
+            BigDecimal creditLimit =
+                defaultZero(account.getCreditLimit());
+
+            BigDecimal outstanding =
+                defaultZero(account.getBalance());
+
+            account.setAvailableCredit(
+                creditLimit.subtract(outstanding)
+            );
         }
-        BeanUtils.copyProperties(dto, account, "initialBalance");
-        account.setName(dto.getName());
-        account.setType(dto.getName());
-        account.setNature(dto.getNature());
-        updateById(account);
-        return id.toString();
+    }
+
+    private BigDecimal defaultZero(BigDecimal value) {
+        return value == null
+            ? BigDecimal.ZERO
+            : value;
     }
 }
