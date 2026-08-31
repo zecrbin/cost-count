@@ -1,14 +1,19 @@
 package com.costcount.service.impl;
 
 import com.costcount.entity.AccountProvider;
+import com.costcount.entity.AccountType;
 import com.costcount.exception.BizException;
 import com.costcount.mapper.AccountProviderMapper;
+import com.costcount.mapper.AccountTypeMapper;
 import com.costcount.service.AccountProviderService;
 import com.costcount.vo.account.provider.AccountProviderVO;
 import com.github.yulichang.base.MPJBaseServiceImpl;
+import com.github.yulichang.wrapper.MPJLambdaWrapper;
+import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +22,9 @@ import java.util.Optional;
 public class AccountProviderServiceImpl
         extends MPJBaseServiceImpl<AccountProviderMapper, AccountProvider>
         implements AccountProviderService {
+
+    @Resource
+    private AccountTypeMapper accountTypeMapper;
 
     @Override
     public List<AccountProviderVO> listAccountProviders(String providerName) {
@@ -73,7 +81,15 @@ public class AccountProviderServiceImpl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Void deleteAccountProvider(List<Long> accountProviderIds) {
+
+        MPJLambdaWrapper<AccountType> wrapper = new MPJLambdaWrapper<>();
+        wrapper.in(AccountType::getAccProviderId, accountProviderIds);
+
+        if (accountTypeMapper.selectCount(wrapper) > 0) {
+            throw new BizException("Cannot delete provider with associated account types");
+        }
 
         removeByIds(accountProviderIds);
         return null;

@@ -39,6 +39,8 @@ public class AccountVO {
      */
     private BigDecimal availableCredit;
 
+    private String icon;
+
     private Integer sort;
 
     private Integer status;

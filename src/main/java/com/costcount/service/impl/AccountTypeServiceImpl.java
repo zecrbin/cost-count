@@ -1,8 +1,10 @@
 package com.costcount.service.impl;
 
 import com.costcount.dto.account.type.AccountTypeQueryDto;
+import com.costcount.entity.Account;
 import com.costcount.entity.AccountProvider;
 import com.costcount.entity.AccountType;
+import com.costcount.mapper.AccountMapper;
 import com.costcount.mapper.AccountProviderMapper;
 import com.costcount.mapper.AccountTypeMapper;
 import com.costcount.service.AccountTypeService;
@@ -12,6 +14,7 @@ import com.github.yulichang.wrapper.MPJLambdaWrapper;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +29,9 @@ public class AccountTypeServiceImpl
 
     @Resource
     private AccountProviderMapper accountProviderMapper;
+
+    @Resource
+    private AccountMapper accountMapper;
 
     @Override
     public List<AccountTypeVO> listAccountTypes(AccountTypeQueryDto queryDTO) {
@@ -90,7 +96,17 @@ public class AccountTypeServiceImpl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Void deleteAccountType(List<Long> accountTypeIds) {
+
+        MPJLambdaWrapper<Account> wrapper = new MPJLambdaWrapper<>();
+        wrapper.in(Account::getAccTypeId, accountTypeIds);
+        Long count = accountMapper.selectJoinCount(wrapper);
+
+        if (count > 0) {
+            throw new IllegalArgumentException("Cannot delete account type(s) that are in use by accounts");
+        }
+
         removeByIds(accountTypeIds);
         return null;
     }

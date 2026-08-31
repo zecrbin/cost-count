@@ -8,44 +8,52 @@ import com.costcount.common.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName("cc_account")
-public class Account extends BaseEntity {
+@TableName("cc_icon")
+public class Icon extends BaseEntity {
 
+    /**
+     * 主键ID
+     */
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    private Long accTypeId;
-
-    private String accName;
-
-    private String accTailNum;
+    /**
+     * 图标名称
+     */
+    private String iconName;
 
     /**
-     * DEBIT：当前实际余额
-     * CREDIT：当前待还金额
+     * 图标相对路径
+     * 例如：
+     * account-types/花呗.png
+     * bookkeeping/餐饮.png
      */
-    private BigDecimal balance;
+    private String iconPath;
 
     /**
-     * 信用额度，仅 CREDIT 使用
+     * 图标分类
+     * ACCOUNT
+     * BOOKKEEPING
      */
-    private BigDecimal creditLimit;
+    private String iconCategory;
+
+    private Integer isDefault;
 
     /**
-     * 理想信用额度，仅 CREDIT 使用
+     * 排序号
      */
-    private BigDecimal idealCreditLimit;
-
-    private String icon;
-
     private Integer sort;
 
+    /**
+     * 状态：0停用，1启用
+     */
     private Integer status;
 
+    /**
+     * 逻辑删除：0否，1是
+     */
     @TableLogic
     private Integer isDeleted;
 }

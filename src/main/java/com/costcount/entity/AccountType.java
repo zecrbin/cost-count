@@ -8,8 +8,6 @@ import com.costcount.common.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDateTime;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
 @TableName("cc_account_type")
@@ -23,8 +21,6 @@ public class AccountType extends BaseEntity {
     private String typeCode;
 
     private String typeName;
-
-    private String icon;
 
     private Integer sort;
 
