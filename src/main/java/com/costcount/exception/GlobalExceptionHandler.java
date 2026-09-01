@@ -19,6 +19,15 @@ public class GlobalExceptionHandler {
         return R.fail(exception.getCode(), exception.getMessage());
     }
 
+    /**
+     * 参数或业务前置条件不满足时，向前端返回具体的中文原因。
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public R<Void> handleIllegalArgumentException(IllegalArgumentException exception) {
+        log.error("请求参数不合法", exception);
+        return R.fail(400, exception.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public R<Void> handleValidException(MethodArgumentNotValidException exception) {
         log.error("参数校验失败", exception);

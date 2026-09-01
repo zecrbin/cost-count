@@ -36,6 +36,6 @@ public class AccountSaveDTO {
 
     private Integer status = 1;
 
-    @Size(max = 256)
+    @Size(max = 256, message = "备注不能超过256个字符")
     private String remark;
 }

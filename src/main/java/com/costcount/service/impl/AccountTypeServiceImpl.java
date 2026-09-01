@@ -54,19 +54,19 @@ public class AccountTypeServiceImpl
     public String addAccountType(AccountType accountType) {
 
         if (accountType.getAccProviderId() == null) {
-            throw new IllegalArgumentException("Account provider ID cannot be null");
+            throw new IllegalArgumentException("账户提供方ID不能为空");
         }
 
         AccountProvider accountProvider = accountProviderMapper.selectById(accountType.getAccProviderId());
 
         if (accountProvider == null) {
-            throw new IllegalArgumentException("Account provider does not exist");
+            throw new IllegalArgumentException("账户提供方不存在");
         }
 
         if (lambdaQuery().eq(AccountType::getAccProviderId, accountType.getAccProviderId())
                 .eq(AccountType::getTypeName, accountType.getTypeName())
                 .exists()) {
-            throw new IllegalArgumentException("Account type name already exists for this provider");
+            throw new IllegalArgumentException("该账户提供方下已存在相同名称的账户类型");
         }
 
         accountType.setId(null);
@@ -77,23 +77,23 @@ public class AccountTypeServiceImpl
     @Override
     public String updateAccountType(AccountType accountType) {
         if (accountType == null || accountType.getId() == null) {
-            throw new IllegalArgumentException("Account type ID cannot be null");
+            throw new IllegalArgumentException("账户类型ID不能为空");
         }
 
         AccountProvider accountProvider = accountProviderMapper.selectById(accountType.getAccProviderId());
         if (accountProvider == null) {
-            throw new IllegalArgumentException("Account provider does not exist");
+            throw new IllegalArgumentException("账户提供方不存在");
         }
 
         if (lambdaQuery().eq(AccountType::getAccProviderId, accountType.getAccProviderId())
                 .eq(AccountType::getTypeName, accountType.getTypeName())
                 .ne(AccountType::getId, accountType.getId())
                 .exists()) {
-            throw new IllegalArgumentException("Account type name already exists for this provider");
+            throw new IllegalArgumentException("该账户提供方下已存在相同名称的账户类型");
         }
 
         if (!updateById(accountType)) {
-            throw new IllegalArgumentException("Account type does not exist");
+            throw new IllegalArgumentException("账户类型不存在");
         }
 
         return accountType.getId().toString();
@@ -108,7 +108,7 @@ public class AccountTypeServiceImpl
         Long count = accountMapper.selectJoinCount(wrapper);
 
         if (count > 0) {
-            throw new IllegalArgumentException("Cannot delete account type(s) that are in use by accounts");
+            throw new IllegalArgumentException("账户类型已被账户使用，无法删除");
         }
 
         removeByIds(accountTypeIds);

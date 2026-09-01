@@ -47,12 +47,12 @@ public class AccountProviderServiceImpl
     public String addAccountProvider(AccountProvider accountProvider) {
 
         if (accountProvider == null || StringUtils.isBlank(accountProvider.getProviderName())) {
-            throw new BizException("Provider name cannot be empty");
+            throw new BizException("账户提供方名称不能为空");
         }
 
         if (lambdaQuery().eq(AccountProvider::getProviderName, accountProvider.getProviderName())
                 .exists()) {
-            throw new BizException("Provider name already exists");
+            throw new BizException("账户提供方名称已存在");
         }
 
         accountProvider.setId(null);
@@ -63,17 +63,17 @@ public class AccountProviderServiceImpl
     @Override
     public String updateAccountProvider(AccountProvider accountProvider) {
         if (accountProvider == null || accountProvider.getId() == null) {
-            throw new BizException("Account provider ID cannot be null");
+            throw new BizException("账户提供方ID不能为空");
         }
 
         if (StringUtils.isBlank(accountProvider.getProviderName())) {
-            throw new BizException("Provider name cannot be empty");
+            throw new BizException("账户提供方名称不能为空");
         }
 
         if (lambdaQuery().eq(AccountProvider::getProviderName, accountProvider.getProviderName())
                 .ne(AccountProvider::getId, accountProvider.getId())
                 .exists()) {
-            throw new BizException("Provider name already exists");
+            throw new BizException("账户提供方名称已存在");
         }
 
         updateById(accountProvider);
@@ -88,7 +88,7 @@ public class AccountProviderServiceImpl
         wrapper.in(AccountType::getAccProviderId, accountProviderIds);
 
         if (accountTypeMapper.selectCount(wrapper) > 0) {
-            throw new BizException("Cannot delete provider with associated account types");
+            throw new BizException("账户提供方已关联账户类型，无法删除");
         }
 
         removeByIds(accountProviderIds);

@@ -18,5 +18,10 @@ public interface AccountIconService {
             Account account
     );
 
-    void deleteAccountIcon(Long accountId);
+    /**
+     * 按账户中已保存的图标URL删除动态账户图标。
+     *
+     * @param iconUrl 动态图标URL
+     */
+    void deleteAccountIcon(String iconUrl);
 }
