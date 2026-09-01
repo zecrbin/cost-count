@@ -12,9 +12,9 @@ import com.costcount.vo.account.type.AccountTypeVO;
 import com.github.yulichang.base.MPJBaseServiceImpl;
 import com.github.yulichang.wrapper.MPJLambdaWrapper;
 import jakarta.annotation.Resource;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,26 +35,19 @@ public class AccountTypeServiceImpl
 
     @Override
     public List<AccountTypeVO> listAccountTypes(AccountTypeQueryDto queryDTO) {
-
-        MPJLambdaWrapper<AccountType> wrapper = new MPJLambdaWrapper<>();
-
-        wrapper.selectAsClass(AccountType.class, AccountTypeVO.class)
-                .eq(queryDTO.getAccProviderId() != null, AccountType::getAccProviderId, queryDTO.getAccProviderId())
-                .eq(queryDTO.getStatus() != null, AccountType::getStatus, queryDTO.getStatus())
-                .like(queryDTO.getTypeName() != null, AccountType::getTypeName, queryDTO.getTypeName())
-                .like(queryDTO.getTypeCode() != null, AccountType::getTypeCode, queryDTO.getTypeCode())
+        AccountTypeQueryDto query = Optional.ofNullable(queryDTO).orElseGet(AccountTypeQueryDto::new);
+        MPJLambdaWrapper<AccountType> wrapper = new MPJLambdaWrapper<AccountType>()
+                .selectAsClass(AccountType.class, AccountTypeVO.class)
+                .select(AccountProvider::getProviderName)
+                .leftJoin(AccountProvider.class, AccountProvider::getId, AccountType::getAccProviderId)
+                .eq(query.getAccProviderId() != null, AccountType::getAccProviderId, query.getAccProviderId())
+                .eq(query.getStatus() != null, AccountType::getStatus, query.getStatus())
+                .like(StringUtils.hasText(query.getTypeName()), AccountType::getTypeName, query.getTypeName())
+                .like(StringUtils.hasText(query.getTypeCode()), AccountType::getTypeCode, query.getTypeCode())
                 .orderByAsc(AccountType::getSort);
 
-        return Optional.ofNullable(accountTypeMapper.selectList(wrapper))
-                .orElse(List.of())
-                .stream()
-                .map(accountType -> {
-                    AccountTypeVO accountTypeVO = new AccountTypeVO();
-                    BeanUtils.copyProperties(accountType, accountTypeVO);
-                    return accountTypeVO;
-                })
-                .toList();
-
+        return Optional.ofNullable(accountTypeMapper.selectJoinList(AccountTypeVO.class, wrapper))
+                .orElseGet(List::of);
     }
 
     @Override
@@ -83,14 +76,25 @@ public class AccountTypeServiceImpl
 
     @Override
     public String updateAccountType(AccountType accountType) {
-
-        if (lambdaQuery().eq(AccountType::getTypeName, accountType.getTypeName())
-                .ne(AccountType::getId, accountType.getId())
-                .exists()) {
-            throw new IllegalArgumentException("Account type name already exists");
+        if (accountType == null || accountType.getId() == null) {
+            throw new IllegalArgumentException("Account type ID cannot be null");
         }
 
-        updateById(accountType);
+        AccountProvider accountProvider = accountProviderMapper.selectById(accountType.getAccProviderId());
+        if (accountProvider == null) {
+            throw new IllegalArgumentException("Account provider does not exist");
+        }
+
+        if (lambdaQuery().eq(AccountType::getAccProviderId, accountType.getAccProviderId())
+                .eq(AccountType::getTypeName, accountType.getTypeName())
+                .ne(AccountType::getId, accountType.getId())
+                .exists()) {
+            throw new IllegalArgumentException("Account type name already exists for this provider");
+        }
+
+        if (!updateById(accountType)) {
+            throw new IllegalArgumentException("Account type does not exist");
+        }
 
         return accountType.getId().toString();
     }
