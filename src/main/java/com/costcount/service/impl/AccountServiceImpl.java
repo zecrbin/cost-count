@@ -11,10 +11,12 @@ import com.costcount.mapper.AccountProviderMapper;
 import com.costcount.mapper.AccountTypeMapper;
 import com.costcount.service.AccountIconService;
 import com.costcount.service.AccountService;
+import com.costcount.service.TransactionService;
 import com.costcount.vo.AccountVO;
 import com.github.yulichang.base.MPJBaseServiceImpl;
 import com.github.yulichang.wrapper.MPJLambdaWrapper;
 import jakarta.annotation.Resource;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -26,6 +28,7 @@ import java.util.Optional;
 import static com.costcount.common.CommonConstant.CREDIT;
 import static com.costcount.common.CommonConstant.DEBIT;
 import static com.costcount.common.CommonConstant.DEFAULT_SORT;
+import static com.costcount.common.CommonConstant.NOT_DELETED;
 import static com.costcount.common.CommonConstant.NORMAL_STATUS;
 
 @Service
@@ -45,6 +48,9 @@ public class AccountServiceImpl
     @Resource
     private AccountIconService accountIconService;
 
+    @Resource
+    private TransactionService transactionService;
+
     @Override
     public List<AccountVO> listAllAccount(AccountQueryDTO dto) {
         AccountQueryDTO query = Optional.ofNullable(dto).orElseGet(AccountQueryDTO::new);
@@ -56,6 +62,9 @@ public class AccountServiceImpl
                 .select(AccountType::getTypeName, AccountType::getTypeCode)
                 .leftJoin(AccountType.class, AccountType::getId, Account::getAccTypeId)
                 .leftJoin(AccountProvider.class, AccountProvider::getId, AccountType::getAccProviderId)
+                .eq(Account::getIsDeleted, NOT_DELETED)
+                .eq(AccountType::getIsDeleted, NOT_DELETED)
+                .eq(AccountProvider::getIsDeleted, NOT_DELETED)
                 .eq(query.getProviderId() != null, AccountProvider::getId, query.getProviderId())
                 .eq(StringUtils.hasText(query.getTypeCode()), AccountType::getTypeCode, query.getTypeCode())
                 .eq(query.getStatus() != null, Account::getStatus, query.getStatus())
@@ -77,6 +86,9 @@ public class AccountServiceImpl
                 .select(AccountType::getTypeName, AccountType::getTypeCode)
                 .leftJoin(AccountType.class, AccountType::getId, Account::getAccTypeId)
                 .leftJoin(AccountProvider.class, AccountProvider::getId, AccountType::getAccProviderId)
+                .eq(Account::getIsDeleted, NOT_DELETED)
+                .eq(AccountType::getIsDeleted, NOT_DELETED)
+                .eq(AccountProvider::getIsDeleted, NOT_DELETED)
                 .eq(Account::getId, id);
 
         AccountVO account = accountMapper.selectJoinOne(AccountVO.class, wrapper);
@@ -87,6 +99,7 @@ public class AccountServiceImpl
     }
 
     @Override
+    @Transactional
     public String createAccount(AccountSaveDTO dto) {
         AccountType accountType = accountTypeMapper.selectById(dto.getAccTypeId());
         if (accountType == null) {
@@ -107,9 +120,12 @@ public class AccountServiceImpl
             throw new IllegalArgumentException("账户金额不能为空且不能小于0");
         }
         if (DEBIT.equalsIgnoreCase(accountType.getTypeCode())) {
-            fillDebitAccountBalance(account, dto);
+            account.setBalance(BigDecimal.ZERO);
+            account.setCreditLimit(null);
+            account.setIdealCreditLimit(null);
         } else if (CREDIT.equalsIgnoreCase(accountType.getTypeCode())) {
-            fillCreditAccountBalance(account, dto);
+            account.setBalance(BigDecimal.ZERO);
+            fillCreditAccountCreditLimit(account, dto);
         } else {
             throw new IllegalArgumentException("账户类型编码无效");
         }
@@ -122,6 +138,8 @@ public class AccountServiceImpl
         try {
             account.setIcon(buildAccountIcon(accountType, accountProvider.getIcon(), account));
             accountMapper.insert(account);
+            transactionService.createInitialTransaction(
+                    account.getId(), dto.getBalance(), "ACCOUNT_INITIAL_" + account.getId());
         } catch (RuntimeException exception) {
             // 数据保存失败时清理本次生成的动态图标，避免遗留无归属文件。
             if (dynamicIcon) {
@@ -132,19 +150,12 @@ public class AccountServiceImpl
         return account.getId().toString();
     }
 
-    private void fillDebitAccountBalance(Account account, AccountSaveDTO dto) {
-        account.setBalance(dto.getBalance());
-        account.setCreditLimit(null);
-        account.setIdealCreditLimit(null);
-    }
-
-    private void fillCreditAccountBalance(Account account, AccountSaveDTO dto) {
+    private void fillCreditAccountCreditLimit(Account account, AccountSaveDTO dto) {
         BigDecimal creditLimit = Optional.ofNullable(dto.getCreditLimit()).orElse(BigDecimal.ZERO);
         BigDecimal idealCreditLimit = Optional.ofNullable(dto.getIdealCreditLimit()).orElse(BigDecimal.ZERO);
         if (creditLimit.compareTo(BigDecimal.ZERO) < 0 || idealCreditLimit.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("信用额度和理想信用额度不能小于0");
         }
-        account.setBalance(dto.getBalance());
         account.setCreditLimit(creditLimit);
         account.setIdealCreditLimit(idealCreditLimit);
     }
@@ -178,13 +189,14 @@ public class AccountServiceImpl
             }
         }
 
-        if (dto.getBalance() != null && dto.getBalance().compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("账户金额不能小于0");
+        if (dto.getBalance() != null && dto.getBalance().compareTo(account.getBalance()) != 0) {
+            throw new IllegalArgumentException("账户余额只能通过记账流水调整");
         }
         if (DEBIT.equalsIgnoreCase(accountType.getTypeCode())) {
-            account.setBalance(dto.getBalance() == null ? account.getBalance() : dto.getBalance());
+            account.setCreditLimit(null);
+            account.setIdealCreditLimit(null);
         } else if (CREDIT.equalsIgnoreCase(accountType.getTypeCode())) {
-            updateCreditAccountBalance(account, dto);
+            updateCreditAccountCreditLimit(account, dto);
         } else {
             throw new IllegalArgumentException("账户类型编码无效");
         }
@@ -211,13 +223,12 @@ public class AccountServiceImpl
         return account.getId().toString();
     }
 
-    private void updateCreditAccountBalance(Account account, AccountSaveDTO dto) {
+    private void updateCreditAccountCreditLimit(Account account, AccountSaveDTO dto) {
         if (dto.getCreditLimit() != null && dto.getCreditLimit().compareTo(BigDecimal.ZERO) < 0
                 || dto.getIdealCreditLimit() != null
                 && dto.getIdealCreditLimit().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("信用额度和理想信用额度不能小于0");
         }
-        account.setBalance(dto.getBalance() == null ? account.getBalance() : dto.getBalance());
         account.setCreditLimit(dto.getCreditLimit() == null ? account.getCreditLimit() : dto.getCreditLimit());
         account.setIdealCreditLimit(dto.getIdealCreditLimit() == null
                 ? account.getIdealCreditLimit() : dto.getIdealCreditLimit());
@@ -228,6 +239,9 @@ public class AccountServiceImpl
         Account account = accountMapper.selectById(id);
         if (account == null) {
             throw new IllegalArgumentException("账户不存在");
+        }
+        if (transactionService.existsForAccount(id)) {
+            throw new IllegalArgumentException("账户已有流水，不能删除");
         }
 
         accountMapper.deleteById(id);

@@ -22,7 +22,7 @@ public interface AccountService extends MPJBaseService<Account> {
     /** 创建账户，并按账户名称生成需要的动态图标。 */
     String createAccount(AccountSaveDTO dto);
 
-    /** 修改账户；账户类型保持不变，尾号变化时同步更新名称和图标。 */
+    /** 修改账户资料；余额只能通过流水变化。 */
     String updateAccount(AccountSaveDTO dto);
 
     /** 删除账户及其关联的动态图标文件。 */

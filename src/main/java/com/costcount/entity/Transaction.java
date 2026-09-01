@@ -55,6 +55,8 @@ public class Transaction extends BaseEntity {
     private String requestId;
     /** ADJUSTMENT 的业务原因。 */
     private String adjustmentReason;
+    /** 冲正流水对应的原流水 ID。 */
+    private Long reversalOfId;
     /** 0草稿、1已入账、2已冲正。 */
     private Integer status;
 
