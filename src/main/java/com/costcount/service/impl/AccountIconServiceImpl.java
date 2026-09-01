@@ -38,6 +38,10 @@ public class AccountIconServiceImpl
             throw new IllegalArgumentException("账户提供方图标不能为空");
         }
 
+        if (account == null || !StringUtils.hasText(account.getAccName())) {
+            throw new IllegalArgumentException("账户名称不能为空");
+        }
+
         String normalizedTailNum =
                 normalizeTailNum(account.getAccTailNum());
 
@@ -71,13 +75,8 @@ public class AccountIconServiceImpl
                             normalizedTailNum
                     );
 
-            /*
-             * 固定使用账户ID作为文件名。
-             *
-             * 修改尾号时直接覆盖即可。
-             */
             String fileName =
-                    "account_" + account.getAccName() + ".png";
+                    buildFileName(account.getAccName());
 
             Path outputFile =
                     outputDir.resolve(fileName);
@@ -107,35 +106,59 @@ public class AccountIconServiceImpl
     }
 
     @Override
-    public void deleteAccountIcon(Long accountId) {
+    public void deleteAccountIcon(String iconUrl) {
 
-        if (accountId == null) {
+        if (!StringUtils.hasText(iconUrl)) {
             return;
+        }
+
+        String urlPrefix = iconStorageProperties.getGenerated().getUrlPrefix();
+        if (!urlPrefix.endsWith("/")) {
+            urlPrefix += "/";
+        }
+        if (!iconUrl.startsWith(urlPrefix)) {
+            return;
+        }
+
+        String fileName = iconUrl.substring(urlPrefix.length());
+        if (!StringUtils.hasText(fileName) || fileName.contains("/") || fileName.contains("\\")) {
+            throw new IllegalArgumentException("动态图标URL不合法");
         }
 
         try {
 
-            Path file = Path.of(
+            Path outputDir = Path.of(
                             iconStorageProperties
                                     .getGenerated()
                                     .getPath()
                     )
                     .toAbsolutePath()
-                    .normalize()
-                    .resolve(
-                            "account_" + accountId + ".png"
-                    );
+                    .normalize();
+            Path file = outputDir.resolve(fileName).normalize();
+            if (!outputDir.equals(file.getParent())) {
+                throw new IllegalArgumentException("动态图标URL超出存储目录");
+            }
 
             Files.deleteIfExists(file);
 
         } catch (IOException e) {
 
-            log.warn(
-                    "删除账户图标失败，accountId={}",
-                    accountId,
+            log.error(
+                    "删除账户图标失败，iconUrl={}",
+                    iconUrl,
                     e
             );
         }
+    }
+
+    private String buildFileName(String accountName) {
+        String normalizedName = accountName.trim();
+        if (normalizedName.matches(".*[\\\\/:*?\"<>|].*")
+                || normalizedName.endsWith(".")
+                || normalizedName.endsWith(" ")) {
+            throw new IllegalArgumentException("账户名称包含非法文件名字符");
+        }
+        return "account_" + normalizedName + ".png";
     }
 
     /**
