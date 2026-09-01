@@ -22,7 +22,6 @@ public class AccountSaveDTO {
     )
     private String accTailNum;
 
-    @NotNull(message = "账户金额不能为空")
     @DecimalMin(value = "0.00", message = "账户金额不能小于0")
     private BigDecimal balance;
 
