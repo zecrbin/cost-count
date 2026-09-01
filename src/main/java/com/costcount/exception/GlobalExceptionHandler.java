@@ -1,7 +1,10 @@
 package com.costcount.exception;
 
 import com.costcount.common.R;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.FieldError;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -9,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -32,7 +36,21 @@ public class GlobalExceptionHandler {
     public R<Void> handleValidException(MethodArgumentNotValidException exception) {
         log.error("参数校验失败", exception);
         String message = exception.getBindingResult().getFieldErrors().stream()
-            .map(FieldError::getDefaultMessage).filter(Objects::nonNull).findFirst().orElse("参数校验失败");
+                .map(FieldError::getDefaultMessage).filter(Objects::nonNull).findFirst().orElse("参数校验失败");
+        return R.fail(400, message);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public R<Void> handleConstraintViolationException(ConstraintViolationException exception) {
+        log.error("参数校验失败", exception);
+        String message = exception.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining("；"));
+
+        if (!StringUtils.hasText(message)) {
+            message = "参数校验失败";
+        }
         return R.fail(400, message);
     }
 
