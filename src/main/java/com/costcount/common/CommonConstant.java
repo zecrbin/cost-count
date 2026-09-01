@@ -10,9 +10,4 @@ public interface CommonConstant {
 
     Integer IS_DEFAULT_CODE = 1;
 
-    String ZHI_FU_BAO_CREDIT = "HUA_BEI";
-    String JING_DONG_CREDIT = "JING_DONG_BAI_TIAO";
-
-    String ICON_ACCOUNT = "ACCOUNT";
-    String ICON_BOOKKEEPING = "BOOKKEEPING";
 }

@@ -1,8 +1,8 @@
 package com.costcount.controller;
 
 import com.costcount.common.R;
-import com.costcount.service.IconService;
-import com.costcount.vo.account.icon.IconVo;
+import com.costcount.service.AccountIconLibraryService;
+import com.costcount.vo.account.icon.AccountIconVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -12,17 +12,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Tag(name = "图标管理")
+@Tag(name = "账户图标库")
 @RestController
-@RequestMapping("/api/icons")
-public class IconController {
+@RequestMapping("/api/account-icons")
+public class AccountIconController {
 
     @Resource
-    private IconService iconService;
+    private AccountIconLibraryService accountIconLibraryService;
 
     @Operation(summary = "查询默认账户图标")
     @GetMapping("/defaults")
-    public R<List<IconVo>> listDefaults() {
-        return R.ok(List.copyOf(iconService.listDefaultIconsMap().values()));
+    public R<List<AccountIconVO>> listDefaults() {
+        return R.ok(accountIconLibraryService.listDefaultAccountIcons());
     }
 }
