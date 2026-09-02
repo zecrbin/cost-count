@@ -41,14 +41,6 @@ mybatis-plus:
       logic-delete-value: 1
       logic-not-delete-value: 0
 
-app:
-  storage:
-    icon:
-      default-prefix: /icons/default/
-      generated:
-        path: ./data/account-icons/
-        url-prefix: /static/account-icons/
-
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
