@@ -14,17 +14,22 @@ import java.time.LocalDateTime;
  */
 public abstract class BaseEntity {
 
+    /** 记录创建时间，由 MyBatis-Plus 新增时自动填充。 */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdTime;
 
+    /** 创建人标识，由 MyBatis-Plus 新增时自动填充。 */
     @TableField(fill = FieldFill.INSERT)
     private String createdBy;
 
+    /** 最后更新时间，由 MyBatis-Plus 新增和更新时自动填充。 */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedTime;
 
+    /** 最后更新人标识，由 MyBatis-Plus 新增和更新时自动填充。 */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private String updatedBy;
 
-    private String remarks;
+    /** 业务备注。 */
+    private String remark;
 }

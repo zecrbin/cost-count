@@ -4,8 +4,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "账户图标管理")
+@Tag(name = "流水导入记录管理")
 @RestController
-@RequestMapping("/api/account-icons")
-public class AccountIconController {
+@RequestMapping("/api/import-records")
+public class ImportRecordController {
 }

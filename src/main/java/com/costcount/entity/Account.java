@@ -15,13 +15,17 @@ import java.math.BigDecimal;
 @TableName("cc_account")
 public class Account extends BaseEntity {
 
+    /** 账户主键。 */
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    private Long accTypeId;
+    /** 所属账户类型 ID。 */
+    private Long typeId;
 
+    /** 账户名称。 */
     private String accName;
 
+    /** 账户尾号，例如银行卡后四位。 */
     private String accTailNum;
 
     /**
@@ -40,12 +44,16 @@ public class Account extends BaseEntity {
      */
     private BigDecimal idealCreditLimit;
 
+    /** 账户展示图标地址。 */
     private String icon;
 
+    /** 展示排序值，越小越靠前。 */
     private Integer sort;
 
+    /** 账户状态：1 正常，0 停用。 */
     private Integer status;
 
+    /** 逻辑删除标识：0 未删除，1 已删除。 */
     @TableLogic
     private Integer isDeleted;
 }

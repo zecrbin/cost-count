@@ -11,6 +11,7 @@ import com.costcount.exception.BizException;
 import com.costcount.mapper.AccountProviderMapper;
 import com.costcount.mapper.AccountTypeMapper;
 import com.costcount.vo.account.provider.AccountProviderVO;
+import com.github.yulichang.wrapper.MPJLambdaWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -97,7 +98,8 @@ class AccountProviderServiceImplTest {
         provider.setId(10001L);
         provider.setProviderName("招商银行");
         provider.setIcon("providers/cmb.png");
-        when(accountProviderMapper.selectList(any(Wrapper.class))).thenReturn(List.of(provider));
+        when(accountProviderMapper.selectJoinList(any(Class.class), any(MPJLambdaWrapper.class)))
+                .thenReturn(List.of(toVO(provider)));
 
         AccountProviderQueryDTO query = new AccountProviderQueryDTO();
         query.setProviderName(" 招商 ");
@@ -128,7 +130,6 @@ class AccountProviderServiceImplTest {
 
     @Test
     void deleteAccountProvidersShouldRejectProvidersReferencedByAccountTypes() {
-        when(accountProviderMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
         when(accountTypeMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
 
         BizException exception = assertThrows(
@@ -137,5 +138,13 @@ class AccountProviderServiceImplTest {
         );
 
         assertEquals(409, exception.getCode());
+    }
+
+    private AccountProviderVO toVO(AccountProvider provider) {
+        AccountProviderVO vo = new AccountProviderVO();
+        vo.setId(provider.getId());
+        vo.setProviderName(provider.getProviderName());
+        vo.setIcon(provider.getIcon());
+        return vo;
     }
 }

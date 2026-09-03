@@ -14,10 +14,10 @@ public class AccountProviderSaveDTO {
 
     @Schema(description = "账户提供方名称", example = "招商银行", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "账户提供方名称不能为空")
-    @Size(max = 64, message = "账户提供方名称不能超过64个字符")
+    @Size(max = 128, message = "账户提供方名称不能超过128个字符")
     private String providerName;
 
     @Schema(description = "图标路径；传空值可清除图标", example = "providers/cmb.png")
-    @Size(max = 255, message = "图标路径不能超过255个字符")
+    @Size(max = 256, message = "图标路径不能超过256个字符")
     private String icon;
 }

@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 @TableName("cc_account_daily_balance")
 public class AccountDailyBalance {
 
+    /** 每日余额记录主键。 */
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
