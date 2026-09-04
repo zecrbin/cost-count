@@ -1,6 +1,7 @@
 package com.costcount.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.costcount.common.AccountDictionaryWriteLock;
 import com.costcount.dto.account.type.AccountTypeQueryDTO;
 import com.costcount.dto.account.type.AccountTypeSaveDTO;
 import com.costcount.entity.Account;
@@ -21,6 +22,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.costcount.common.CommonConstant.DEFAULT_SORT;
 
@@ -77,74 +79,43 @@ public class AccountTypeServiceImpl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String addAccountType(AccountTypeSaveDTO dto) {
         validateSaveDTO(dto);
-
-        AccountType accountType = new AccountType();
-        accountType.setProviderId(dto.getProviderId());
-        accountType.setTypeCode(normalize(dto.getTypeCode()));
-        accountType.setTypeName(normalize(dto.getTypeName()));
-        accountType.setSort(dto.getSort() == null ? DEFAULT_SORT : dto.getSort());
-        accountType.setId(null);
-
-        if (accountProviderMapper.selectById(accountType.getProviderId()) == null) {
-            throw new BizException(404, "账户提供方不存在");
+        ReentrantLock lock = AccountDictionaryWriteLock.acquire();
+        try {
+            AccountType accountType = buildAccountType(dto);
+            validateProviderAndDuplicate(accountType, null);
+            save(accountType);
+            return String.valueOf(accountType.getId());
+        } finally {
+            AccountDictionaryWriteLock.release(lock);
         }
-
-        if (lambdaQuery().eq(AccountType::getProviderId, accountType.getProviderId())
-                .eq(AccountType::getTypeCode, accountType.getTypeCode())
-                .exists()) {
-            throw new BizException(409, "该账户提供方下已存在相同编码的账户类型");
-        }
-
-        if (lambdaQuery().eq(AccountType::getProviderId, accountType.getProviderId())
-                .eq(AccountType::getTypeName, accountType.getTypeName())
-                .exists()) {
-            throw new BizException(409, "该账户提供方下已存在相同名称的账户类型");
-        }
-
-        save(accountType);
-
-        return String.valueOf(accountType.getId());
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String updateAccountType(AccountTypeSaveDTO dto) {
         validateSaveDTO(dto);
         if (dto.getId() == null) {
             throw new BizException(400, "账户类型 ID 不能为空");
         }
-
-        AccountType accountType = getById(dto.getId());
-        if (accountType == null) {
-            throw new BizException(404, "账户类型不存在");
+        ReentrantLock lock = AccountDictionaryWriteLock.acquire();
+        try {
+            AccountType accountType = getById(dto.getId());
+            if (accountType == null) {
+                throw new BizException(404, "账户类型不存在");
+            }
+            accountType.setProviderId(dto.getProviderId());
+            accountType.setTypeCode(normalize(dto.getTypeCode()));
+            accountType.setTypeName(normalize(dto.getTypeName()));
+            accountType.setSort(dto.getSort() == null ? DEFAULT_SORT : dto.getSort());
+            validateProviderAndDuplicate(accountType, accountType.getId());
+            updateById(accountType);
+            return String.valueOf(dto.getId());
+        } finally {
+            AccountDictionaryWriteLock.release(lock);
         }
-
-        accountType.setProviderId(dto.getProviderId());
-        accountType.setTypeCode(normalize(dto.getTypeCode()));
-        accountType.setTypeName(normalize(dto.getTypeName()));
-        accountType.setSort(dto.getSort() == null ? DEFAULT_SORT : dto.getSort());
-
-        if (accountProviderMapper.selectById(accountType.getProviderId()) == null) {
-            throw new BizException(404, "账户提供方不存在");
-        }
-
-        if (lambdaQuery().eq(AccountType::getProviderId, accountType.getProviderId())
-                .eq(AccountType::getTypeCode, accountType.getTypeCode())
-                .ne(AccountType::getId, accountType.getId())
-                .exists()) {
-            throw new BizException(409, "该账户提供方下已存在相同编码的账户编码");
-        }
-
-        if (lambdaQuery().eq(AccountType::getProviderId, accountType.getProviderId())
-                .eq(AccountType::getTypeName, accountType.getTypeName())
-                .ne(AccountType::getId, accountType.getId())
-                .exists()) {
-            throw new BizException(409, "该账户提供方下已存在相同名称的账户名称");
-        }
-
-        updateById(accountType);
-        return String.valueOf(dto.getId());
     }
 
     @Override
@@ -154,15 +125,43 @@ public class AccountTypeServiceImpl
                 || accountTypeIds.stream().anyMatch(Objects::isNull)) {
             throw new BizException(400, "账户类型 ID 不能为空");
         }
-        List<Long> ids = accountTypeIds.stream().distinct().toList();
-
-        LambdaQueryWrapper<Account> wrapper = new LambdaQueryWrapper<Account>()
-                .in(Account::getTypeId, ids);
-        if (accountMapper.selectCount(wrapper) > 0) {
-            throw new BizException(409, "账户类型已被账户使用，无法删除");
+        ReentrantLock lock = AccountDictionaryWriteLock.acquire();
+        try {
+            List<Long> ids = accountTypeIds.stream().distinct().toList();
+            LambdaQueryWrapper<Account> wrapper = new LambdaQueryWrapper<Account>()
+                    .in(Account::getTypeId, ids);
+            if (accountMapper.selectCount(wrapper) > 0) {
+                throw new BizException(409, "账户类型已被账户使用，无法删除");
+            }
+            removeByIds(ids);
+        } finally {
+            AccountDictionaryWriteLock.release(lock);
         }
+    }
 
-        removeByIds(ids);
+    private AccountType buildAccountType(AccountTypeSaveDTO dto) {
+        AccountType accountType = new AccountType();
+        accountType.setProviderId(dto.getProviderId());
+        accountType.setTypeCode(normalize(dto.getTypeCode()));
+        accountType.setTypeName(normalize(dto.getTypeName()));
+        accountType.setSort(dto.getSort() == null ? DEFAULT_SORT : dto.getSort());
+        return accountType;
+    }
+
+    private void validateProviderAndDuplicate(AccountType accountType, Long excludeId) {
+        if (accountProviderMapper.selectById(accountType.getProviderId()) == null) {
+            throw new BizException(404, "账户提供方不存在");
+        }
+        if (lambdaQuery().eq(AccountType::getProviderId, accountType.getProviderId())
+                .eq(AccountType::getTypeCode, accountType.getTypeCode())
+                .ne(excludeId != null, AccountType::getId, excludeId).exists()) {
+            throw new BizException(409, "该账户提供方下已存在相同编码的账户类型");
+        }
+        if (lambdaQuery().eq(AccountType::getProviderId, accountType.getProviderId())
+                .eq(AccountType::getTypeName, accountType.getTypeName())
+                .ne(excludeId != null, AccountType::getId, excludeId).exists()) {
+            throw new BizException(409, "该账户提供方下已存在相同名称的账户类型");
+        }
     }
 
     private void validateSaveDTO(AccountTypeSaveDTO dto) {

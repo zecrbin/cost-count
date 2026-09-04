@@ -3,6 +3,7 @@ package com.costcount.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.costcount.dto.account.provider.AccountProviderQueryDTO;
 import com.costcount.dto.account.provider.AccountProviderSaveDTO;
+import com.costcount.common.AccountDictionaryWriteLock;
 import com.costcount.entity.AccountType;
 import com.costcount.entity.AccountProvider;
 import com.costcount.exception.BizException;
@@ -19,6 +20,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 public class AccountProviderServiceImpl
@@ -53,52 +55,48 @@ public class AccountProviderServiceImpl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String addAccountProvider(AccountProviderSaveDTO dto) {
         validateSaveDTO(dto);
         String providerName = normalize(dto.getProviderName());
-
-        if (lambdaQuery()
-                .eq(AccountProvider::getProviderName, providerName)
-                .exists()
-        ) {
-            throw new BizException(409, "账户提供方名称已存在");
+        ReentrantLock lock = AccountDictionaryWriteLock.acquire();
+        try {
+            if (lambdaQuery().eq(AccountProvider::getProviderName, providerName).exists()) {
+                throw new BizException(409, "账户提供方名称已存在");
+            }
+            AccountProvider provider = new AccountProvider();
+            provider.setProviderName(providerName);
+            provider.setIcon(normalize(dto.getIcon()));
+            save(provider);
+            return String.valueOf(provider.getId());
+        } finally {
+            AccountDictionaryWriteLock.release(lock);
         }
-
-        AccountProvider provider = new AccountProvider();
-        provider.setProviderName(providerName);
-        provider.setIcon(normalize(dto.getIcon()));
-
-        save(provider);
-
-        return String.valueOf(provider.getId());
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String updateAccountProvider(AccountProviderSaveDTO dto) {
         validateSaveDTO(dto);
         Long id = dto.getId();
-
-        AccountProvider provider = getById(id);
-        if (provider == null) {
-            throw new BizException(404, "账户提供方不存在");
-        }
-
         String providerName = normalize(dto.getProviderName());
-
-        if (lambdaQuery()
-                .eq(AccountProvider::getProviderName, providerName)
-                .ne(AccountProvider::getId, id)
-                .exists()
-        ) {
-            throw new BizException(409, "账户提供方名称已存在");
+        ReentrantLock lock = AccountDictionaryWriteLock.acquire();
+        try {
+            AccountProvider provider = getById(id);
+            if (provider == null) {
+                throw new BizException(404, "账户提供方不存在");
+            }
+            if (lambdaQuery().eq(AccountProvider::getProviderName, providerName)
+                    .ne(AccountProvider::getId, id).exists()) {
+                throw new BizException(409, "账户提供方名称已存在");
+            }
+            provider.setProviderName(providerName);
+            provider.setIcon(normalize(dto.getIcon()));
+            updateById(provider);
+            return String.valueOf(id);
+        } finally {
+            AccountDictionaryWriteLock.release(lock);
         }
-
-        provider.setProviderName(providerName);
-        provider.setIcon(normalize(dto.getIcon()));
-
-        updateById(provider);
-
-        return String.valueOf(id);
     }
 
     @Override
@@ -108,17 +106,18 @@ public class AccountProviderServiceImpl
                 || accountProviderIds.stream().anyMatch(Objects::isNull)) {
             throw new BizException(400, "账户提供方ID不能为空");
         }
-        List<Long> ids = accountProviderIds.stream().distinct().toList();
-
-        LambdaQueryWrapper<AccountType> wrapper = new LambdaQueryWrapper<AccountType>()
-                .in(AccountType::getProviderId, ids);
-        Long accountTypeCount = accountTypeMapper.selectCount(wrapper);
-
-        if (accountTypeCount > 0) {
-            throw new BizException(409, "账户提供方已关联账户类型，无法删除");
+        ReentrantLock lock = AccountDictionaryWriteLock.acquire();
+        try {
+            List<Long> ids = accountProviderIds.stream().distinct().toList();
+            LambdaQueryWrapper<AccountType> wrapper = new LambdaQueryWrapper<AccountType>()
+                    .in(AccountType::getProviderId, ids);
+            if (accountTypeMapper.selectCount(wrapper) > 0) {
+                throw new BizException(409, "账户提供方已关联账户类型，无法删除");
+            }
+            removeByIds(ids);
+        } finally {
+            AccountDictionaryWriteLock.release(lock);
         }
-
-        removeByIds(ids);
     }
 
     private void validateSaveDTO(AccountProviderSaveDTO dto) {
