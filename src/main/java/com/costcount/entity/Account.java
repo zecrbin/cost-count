@@ -1,6 +1,8 @@
 package com.costcount.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -10,6 +12,11 @@ import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 
+/**
+ * 账户实体。
+ *
+ * <p>资产类账户的余额表示可用资产，信用类账户的余额表示待还金额。</p>
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @TableName("cc_account")
@@ -25,7 +32,8 @@ public class Account extends BaseEntity {
     /** 账户名称。 */
     private String accName;
 
-    /** 账户尾号，例如银行卡后四位。 */
+    /** 账户尾号，例如银行卡后四位；更新时允许显式清空。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String accTailNum;
 
     /**
@@ -37,14 +45,17 @@ public class Account extends BaseEntity {
     /**
      * 信用额度，仅 CREDIT 使用
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal creditLimit;
 
     /**
      * 理想信用额度，仅 CREDIT 使用
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal idealCreditLimit;
 
-    /** 账户展示图标地址。 */
+    /** 账户展示图标地址；更新时允许显式清空。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String icon;
 
     /** 展示排序值，越小越靠前。 */
