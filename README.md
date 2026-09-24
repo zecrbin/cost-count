@@ -47,6 +47,16 @@ npm run dev     # 改代码调试：热更新，未压缩的依赖约 13MB，打
 
 接口文档：`http://localhost:8081/swagger-ui.html`。
 
+### 本地文件
+
+| 目录（相对 backend/） | 内容 | 环境变量 |
+| --- | --- | --- |
+| `data/account-icons` | 按卡号尾号生成的银行卡图标 | `ACCOUNT_ICON_DIR` |
+| `data/uploaded-icons` | 上传的机构、账户图标 | `UPLOADED_ICON_DIR` |
+
+未被任何机构或账户使用、且上传超过 24 小时的图标，每天 03:30 自动清理（例如上传后点了取消）。
+执行时间可用 `UPLOADED_ICON_CLEANUP_CRON` 修改，设为 `-` 关闭。
+
 ## 测试
 
 ```bash

@@ -16,6 +16,7 @@ import com.costcount.service.AccountService;
 import com.costcount.service.AccountTypeService;
 import com.costcount.service.CategoryService;
 import com.costcount.service.TransactionService;
+import com.costcount.service.UploadedIconService;
 import com.costcount.vo.account.AccountDailyBalanceVO;
 import com.costcount.vo.account.AccountVO;
 import com.costcount.vo.category.CategoryVO;
@@ -38,6 +39,9 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -75,6 +79,8 @@ class LedgerFlowIntegrationTest {
     private AccountDailyBalanceService accountDailyBalanceService;
     @Resource
     private JdbcTemplate jdbcTemplate;
+    @Resource
+    private UploadedIconService uploadedIconService;
     @Autowired
     private MockMvc mockMvc;
 
@@ -342,6 +348,45 @@ class LedgerFlowIntegrationTest {
 
         accountProviderService.deleteAccountProviders(List.of(provider.getId()));
         assertTrue(Files.notExists(Path.of("target/test-uploaded-icons", second.substring(8))), "删除机构后图标应被删除");
+    }
+
+    @Test
+    void cleanupShouldRemoveOnlyOldUnreferencedUploads() throws Exception {
+        Path dir = Path.of("target/test-uploaded-icons");
+        Files.createDirectories(dir);
+        // 清掉之前运行留下的文件，保证删除数量的断言只反映本用例。
+        try (var existing = Files.list(dir)) {
+            for (Path file : existing.toList()) {
+                Files.delete(file);
+            }
+        }
+        byte[] png = {(byte) 0x89, 'P', 'N', 'G'};
+        String providerIcon = "a".repeat(32) + ".png";
+        String accountIcon = "b".repeat(32) + ".png";
+        String freshOrphan = "c".repeat(32) + ".png";
+        String oldOrphan = "d".repeat(32) + ".png";
+        String foreignFile = "keep-me.png";
+        FileTime old = FileTime.from(Instant.now().minus(Duration.ofHours(25)));
+        for (String name : List.of(providerIcon, accountIcon, freshOrphan, oldOrphan, foreignFile)) {
+            Path file = Files.write(dir.resolve(name), png);
+            if (!name.equals(freshOrphan)) {
+                Files.setLastModifiedTime(file, old);
+            }
+        }
+
+        AccountProviderSaveDTO provider = new AccountProviderSaveDTO();
+        provider.setProviderName("上传图标银行");
+        provider.setIcon("uploads/" + providerIcon);
+        accountProviderService.addAccountProvider(provider);
+        AccountSaveDTO account = accountSaveDTO(debitTypeId, "自定义图标账户");
+        account.setIcon("uploads/" + accountIcon);
+        accountService.addAccount(account);
+
+        assertEquals(1, uploadedIconService.cleanupOrphanedIcons(Duration.ofHours(24)));
+        assertTrue(Files.notExists(dir.resolve(oldOrphan)), "超过保留期且未引用的图标应被删除");
+        for (String kept : List.of(providerIcon, accountIcon, freshOrphan, foreignFile)) {
+            assertTrue(Files.exists(dir.resolve(kept)), kept + " 应保留");
+        }
     }
 
     private String uploadIcon(byte[] bytes) throws Exception {

@@ -1,8 +1,16 @@
 package com.costcount.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.costcount.common.AccountDictionaryWriteLock;
 import com.costcount.common.AfterCommit;
+import com.costcount.entity.Account;
+import com.costcount.entity.AccountProvider;
 import com.costcount.exception.BizException;
+import com.costcount.mapper.AccountMapper;
+import com.costcount.mapper.AccountProviderMapper;
 import com.costcount.service.UploadedIconService;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -17,9 +25,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * 保存用户上传的图标。
@@ -27,6 +43,7 @@ import java.util.UUID;
  * <p>按文件内容（而非扩展名或 Content-Type）识别格式，只接受 PNG、JPEG、GIF、WEBP，不接受 SVG
  * 以免嵌入脚本。PNG / JPEG 会重新编码为 PNG 并把长边缩到 {@value #MAX_EDGE} 像素，同时去掉原图元数据。</p>
  */
+@Slf4j
 @Service
 public class UploadedIconServiceImpl implements UploadedIconService {
 
@@ -34,6 +51,14 @@ public class UploadedIconServiceImpl implements UploadedIconService {
     static final String UPLOADED_ICON_PREFIX = "uploads/";
     private static final long MAX_BYTES = 2L * 1024 * 1024;
     private static final int MAX_EDGE = 256;
+    /** 只清理本服务生成的文件名，目录里手动放入的其他文件不受影响。 */
+    private static final Pattern GENERATED_FILE_NAME = Pattern.compile("[0-9a-f]{32}\\.(png|gif|webp)");
+
+    @Resource
+    private AccountProviderMapper accountProviderMapper;
+
+    @Resource
+    private AccountMapper accountMapper;
 
     @Value("${app.storage.uploaded-icon-dir:data/uploaded-icons}")
     private String uploadedIconDir;
@@ -92,6 +117,54 @@ public class UploadedIconServiceImpl implements UploadedIconService {
         if (isUploadedIcon(previousIcon) && !Objects.equals(previousIcon, currentIcon)) {
             AfterCommit.run("删除上传图标 " + previousIcon, () -> deleteUploadedIcon(previousIcon));
         }
+    }
+
+    @Override
+    public int cleanupOrphanedIcons(Duration retention) {
+        Path directory = directory();
+        if (!Files.isDirectory(directory)) {
+            return 0;
+        }
+        Instant cutoff = Instant.now().minus(retention);
+        // 与机构、账户保存共用写锁，避免"刚保存引用"和"判定为孤儿"交错。
+        ReentrantLock lock = AccountDictionaryWriteLock.acquire();
+        try {
+            Set<String> referenced = referencedIconFileNames();
+            int deleted = 0;
+            try (Stream<Path> files = Files.list(directory)) {
+                for (Path file : files.toList()) {
+                    String name = file.getFileName().toString();
+                    if (!GENERATED_FILE_NAME.matcher(name).matches() || referenced.contains(name)
+                            || !Files.isRegularFile(file) || !Files.getLastModifiedTime(file).toInstant().isBefore(cutoff)) {
+                        continue;
+                    }
+                    Files.deleteIfExists(file);
+                    deleted++;
+                }
+            }
+            if (deleted > 0) {
+                log.info("已清理 {} 个未被使用的上传图标", deleted);
+            }
+            return deleted;
+        } catch (IOException exception) {
+            throw new BizException(500, "清理上传图标失败");
+        } finally {
+            AccountDictionaryWriteLock.release(lock);
+        }
+    }
+
+    /** 收集仍被机构、账户引用的上传图标文件名。 */
+    private Set<String> referencedIconFileNames() {
+        Set<String> names = new HashSet<>();
+        List<AccountProvider> providers = accountProviderMapper.selectList(new LambdaQueryWrapper<AccountProvider>()
+                .select(AccountProvider::getIcon)
+                .likeRight(AccountProvider::getIcon, UPLOADED_ICON_PREFIX));
+        providers.forEach(provider -> names.add(provider.getIcon().substring(UPLOADED_ICON_PREFIX.length())));
+        List<Account> accounts = accountMapper.selectList(new LambdaQueryWrapper<Account>()
+                .select(Account::getIcon)
+                .likeRight(Account::getIcon, UPLOADED_ICON_PREFIX));
+        accounts.forEach(account -> names.add(account.getIcon().substring(UPLOADED_ICON_PREFIX.length())));
+        return names;
     }
 
     private Path directory() {
