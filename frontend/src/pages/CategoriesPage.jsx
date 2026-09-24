@@ -1,5 +1,5 @@
 import { ActionIcon, Button, Card, Group, Menu, SegmentedControl, SimpleGrid, Text } from '@mantine/core';
-import { MoreHorizontal, Pencil, Plus, Shapes, Sparkles, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '../api';
 import { CategoryIcon } from '../components/CategoryIcon';
@@ -8,7 +8,7 @@ import { ConfirmModal } from '../components/ConfirmAction';
 import { EmptyState } from '../components/EmptyState';
 import { PageHeader } from '../components/PageHeader';
 import { useData } from '../lib/data';
-import { CATEGORY_TYPES } from '../lib/meta';
+import { CATEGORY_TYPES, categoryEmoji } from '../lib/meta';
 import { notifyError, notifySuccess } from '../lib/notify';
 import { PRESET_CATEGORIES } from '../lib/presets';
 
@@ -19,9 +19,9 @@ function RootCard({ root, onEdit, onAddChild, onDelete }) {
     <Card>
       <Group justify="space-between" wrap="nowrap">
         <Group gap="sm" wrap="nowrap">
-          <CategoryIcon category={categoryMap.get(root.id)} size={40} />
+          <CategoryIcon category={categoryMap.get(root.id)} size={48} />
           <div>
-            <Text fw={600}>{root.categoryName}</Text>
+            <Text fw={800} size="lg">{root.categoryName}</Text>
             <Text size="xs" c="dimmed">{children.length ? `${children.length} 个明细` : '无明细，可直接记账'}</Text>
           </div>
         </Group>
@@ -39,7 +39,9 @@ function RootCard({ root, onEdit, onAddChild, onDelete }) {
       </Group>
       <Group gap={8} mt="md">
         {children.map((child) => (
-          <button key={child.id} type="button" className="cc-chip" onClick={() => onEdit(child)}>{child.categoryName}</button>
+          <button key={child.id} type="button" className="cc-chip" onClick={() => onEdit(child)}>
+            {child.icon && <span>{categoryEmoji(child)}</span>}{child.categoryName}
+          </button>
         ))}
         <button type="button" className="cc-chip" data-dashed onClick={() => onAddChild(root)}>
           <Plus size={13} />明细
@@ -91,9 +93,9 @@ export function CategoriesPage() {
           created += 1;
         }
         const existingChildren = new Set((existing.get(name)?.children || []).map((child) => child.categoryName));
-        for (const [childIndex, childName] of children.entries()) {
+        for (const [childIndex, [childName, childIcon]] of children.entries()) {
           if (existingChildren.has(childName)) continue;
-          await api.categories.create({ categoryType: type, pid: rootId, categoryName: childName, sort: childIndex });
+          await api.categories.create({ categoryType: type, pid: rootId, categoryName: childName, icon: childIcon, sort: childIndex });
           created += 1;
         }
       }
@@ -110,7 +112,8 @@ export function CategoriesPage() {
     <>
       <PageHeader
         title="分类"
-        description="一级分类用于汇总统计，明细用于记账时更精确地归类。"
+        emoji="🏷️"
+        description="大类用来看钱花去哪儿了，明细让每一笔记得更准～"
         actions={<Button leftSection={<Plus size={16} />} onClick={() => open(null, { categoryType: type })}>添加分类</Button>}
       />
       <Group justify="space-between" mb="md">
@@ -123,8 +126,8 @@ export function CategoriesPage() {
 
       {roots.length === 0 ? (
         <Card>
-          <EmptyState icon={Shapes} title={`还没有${CATEGORY_TYPES.find((item) => item.value === type).label}分类`}
-            description="可以一键导入常用分类，之后再按自己的习惯增删。"
+          <EmptyState mood="calm" title={`还没有${CATEGORY_TYPES.find((item) => item.value === type).label}分类`}
+            description="一键导入一套常用分类（都配好了 emoji），之后再按自己的习惯增删～"
             action={(
               <Group gap="sm">
                 <Button leftSection={<Sparkles size={16} />} loading={importing} onClick={importPresets}>导入常用分类</Button>

@@ -46,7 +46,7 @@ function TransactionRow({ transaction, onSelect, perspectiveAccountId, showBalan
       <CategoryIcon category={display.category} type={type} />
       <div className="cc-row-main">
         <Group gap={6} wrap="nowrap">
-          <Text fw={550} size="sm" className="cc-truncate">{display.title}</Text>
+          <Text fw={700} size="sm" className="cc-truncate">{display.title}</Text>
           {type !== 'EXPENSE' && type !== 'INCOME' && <Badge size="xs" color="gray">{display.typeLabel}</Badge>}
         </Group>
         <Group gap={6} mt={3} wrap="nowrap" c="dimmed" style={{ fontSize: 12 }}>
@@ -68,7 +68,7 @@ function TransactionRow({ transaction, onSelect, perspectiveAccountId, showBalan
         </Group>
       </div>
       <div className="cc-row-amount">
-        <Money value={display.amount} sign={display.sign} tone={display.tone} fw={600} size="sm" />
+        <Money value={display.amount} sign={display.sign} tone={display.tone} size="md" />
         {showBalance && transaction.balanceAfter != null && (!perspectiveAccountId || transaction.accountId === perspectiveAccountId) && (
           <Text size="xs" c="dimmed" className="num" mt={2}>余额 <Money value={transaction.balanceAfter} inherit /></Text>
         )}
@@ -104,7 +104,7 @@ export function TransactionList({ transactions, onSelect, perspectiveAccountId, 
       <div className="cc-day" key={key}>
         <div className="cc-day-header">
           <Group gap={8}>
-            <Text fw={600} size="sm">{header.label}</Text>
+            <Text fw={800} size="sm">{header.label}</Text>
             <Text size="xs" c="dimmed">{header.weekday}{header.yearSuffix}</Text>
           </Group>
           <Group gap="md">

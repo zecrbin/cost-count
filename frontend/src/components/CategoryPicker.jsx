@@ -1,6 +1,7 @@
 import { Group, ScrollArea, Text } from '@mantine/core';
 import { useEffect, useMemo, useState } from 'react';
 import { useData } from '../lib/data';
+import { categoryEmoji } from '../lib/meta';
 import { CategoryIcon } from './CategoryIcon';
 
 /** 两级分类选择：上方选一级分类，下方选明细；没有明细的一级分类可直接选中。 */
@@ -36,18 +37,19 @@ export function CategoryPicker({ type, value, onChange, error }) {
           {roots.map((item) => (
             <button key={item.id} type="button" className="cc-chip" onClick={() => selectRoot(item)}
               data-selected={item.id === root.id || undefined} style={{ flexShrink: 0 }}>
+              {categoryEmoji(item) && <span>{categoryEmoji(item)}</span>}
               {item.categoryName}
             </button>
           ))}
         </Group>
       </ScrollArea>
       {children.length > 0 && (
-        <Group gap={8} mt={10} p="sm" style={{ background: 'var(--cc-surface-muted)', borderRadius: 12 }}>
-          <CategoryIcon category={categoryMap.get(root.id)} size={30} />
+        <Group gap={8} mt={10} p="sm" style={{ background: 'var(--cc-surface-muted)', borderRadius: 20 }}>
+          <CategoryIcon category={categoryMap.get(root.id)} size={34} />
           {children.map((child) => (
             <button key={child.id} type="button" className="cc-option" data-selected={child.id === value || undefined}
               onClick={() => onChange(child.id)}>
-              {categoryMap.get(child.id)?.icon && <CategoryIcon category={categoryMap.get(child.id)} size={20} />}
+              {child.icon && <span>{categoryEmoji(child)}</span>}
               {child.categoryName}
             </button>
           ))}

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { accountIconUrl, colorFromText } from '../lib/meta';
 
 /** 账户头像：优先使用账户/内置/机构图标，加载失败或没有图标时显示名称首字。 */
-export function AccountAvatar({ account, size = 40, radius = 'md' }) {
+export function AccountAvatar({ account, size = 40, radius = 'lg' }) {
   const url = accountIconUrl(account);
   const [failedUrl, setFailedUrl] = useState(null);
   const name = account?.providerName || account?.accName || '?';
@@ -20,8 +20,14 @@ export function AccountAvatar({ account, size = 40, radius = 'md' }) {
         styles={{ image: { objectFit: 'contain' } }} />
     );
   }
+  const color = colorFromText(name);
   return (
-    <Avatar size={size} radius={radius} color={colorFromText(name)} variant="filled" styles={{ placeholder: { background: colorFromText(name) } }}>
+    <Avatar size={size} radius={radius} variant="filled" styles={{
+      placeholder: {
+        background: `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 55%, #ffffff))`,
+        color: '#fff', fontWeight: 900, fontSize: Math.round(size * 0.42),
+      },
+    }}>
       {name.slice(0, 1)}
     </Avatar>
   );

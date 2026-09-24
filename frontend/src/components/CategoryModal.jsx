@@ -2,7 +2,7 @@ import { Button, Group, Modal, NumberInput, SegmentedControl, Select, Stack, Tex
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import { useData } from '../lib/data';
-import { CATEGORY_ICONS, CATEGORY_TYPES } from '../lib/meta';
+import { CATEGORY_EMOJIS, CATEGORY_TYPES, categoryEmoji } from '../lib/meta';
 import { notifyError, notifySuccess } from '../lib/notify';
 
 const ROOT = '0';
@@ -22,7 +22,7 @@ export function CategoryModal({ opened, onClose, category, defaults }) {
       categoryType: category.categoryType,
       pid: category.pid && category.pid !== ROOT ? category.pid : ROOT,
       categoryName: category.categoryName,
-      icon: category.icon || null,
+      icon: categoryEmoji({ icon: category.icon }) || null,
       sort: category.sort ?? 0,
       remark: category.remark || '',
     } : {
@@ -68,12 +68,12 @@ export function CategoryModal({ opened, onClose, category, defaults }) {
         <TextInput label="名称" maxLength={64} value={form.categoryName} error={error} data-autofocus
           onChange={(event) => set({ categoryName: event.currentTarget.value })} />
         <div>
-          <Text size="sm" fw={500} mb={6}>图标 <Text span size="xs" c="dimmed">明细未选择时沿用上级图标</Text></Text>
-          <div className="cc-icon-grid">
-            {Object.entries(CATEGORY_ICONS).map(([key, Icon]) => (
-              <button key={key} type="button" className="cc-icon-option" data-selected={form.icon === key || undefined}
-                onClick={() => set({ icon: form.icon === key ? null : key })} aria-label={key}>
-                <Icon size={18} />
+          <Text size="sm" fw={600} mb={6}>选个图标 <Text span size="xs" c="dimmed">明细不选时沿用上级的</Text></Text>
+          <div className="cc-emoji-grid">
+            {CATEGORY_EMOJIS.map((emoji) => (
+              <button key={emoji} type="button" className="cc-emoji-option" data-selected={form.icon === emoji || undefined}
+                onClick={() => set({ icon: form.icon === emoji ? null : emoji })} aria-label={emoji}>
+                {emoji}
               </button>
             ))}
           </div>

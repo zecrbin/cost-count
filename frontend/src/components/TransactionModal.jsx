@@ -12,11 +12,13 @@ import { CategoryPicker } from './CategoryPicker';
 import { ConfirmAction } from './ConfirmAction';
 
 const TYPE_OPTIONS = [
-  { value: 'EXPENSE', label: '支出' },
-  { value: 'INCOME', label: '收入' },
-  { value: 'TRANSFER', label: '转账' },
-  { value: 'ADJUSTMENT', label: '调整余额' },
+  { value: 'EXPENSE', label: '💸 支出', name: '支出' },
+  { value: 'INCOME', label: '💰 收入', name: '收入' },
+  { value: 'TRANSFER', label: '🔁 转账', name: '转账' },
+  { value: 'ADJUSTMENT', label: '⚖️ 调整', name: '余额调整' },
 ];
+
+const SAVED_EMOJI = { EXPENSE: '💸', INCOME: '🎉', TRANSFER: '🔁', ADJUSTMENT: '⚖️' };
 
 const LAST_ACCOUNT_KEY = 'cc.lastAccountId';
 
@@ -116,7 +118,8 @@ export function TransactionModal({ opened, onClose, transaction, defaults }) {
     try {
       await (editing ? api.transactions.update(payload) : api.transactions.create(payload));
       rememberAccount(form.accountId);
-      notifySuccess(editing ? '已保存修改' : `已记录${TYPE_OPTIONS.find((item) => item.value === form.type).label} ${formatMoney(amount)}`);
+      notifySuccess(editing ? '改好啦' : `记好啦！${TYPE_OPTIONS.find((item) => item.value === form.type).name} ${formatMoney(amount)}`,
+        SAVED_EMOJI[form.type]);
       await ledgerChanged();
       if (keepOpen) {
         set({ amount: '', counterparty: '', remark: '' });
@@ -134,7 +137,7 @@ export function TransactionModal({ opened, onClose, transaction, defaults }) {
   const remove = async () => {
     try {
       await api.transactions.remove(transaction.id);
-      notifySuccess('流水已删除');
+      notifySuccess('这笔已经删掉了', '🗑️');
       await ledgerChanged();
       onClose();
     } catch (error) {
@@ -148,10 +151,11 @@ export function TransactionModal({ opened, onClose, transaction, defaults }) {
     : null;
 
   return (
-    <Modal opened={opened} onClose={onClose} size={520} title={<Text fw={650} size="lg">{editing ? '编辑流水' : '记一笔'}</Text>}>
+    <Modal opened={opened} onClose={onClose} size={540}
+      title={<Text fw={900} size="xl">{editing ? '✏️ 修改这一笔' : '✍️ 记一笔'}</Text>}>
       <form onSubmit={(event) => { event.preventDefault(); save(false); }}>
         <Stack gap="md">
-          <SegmentedControl fullWidth data={TYPE_OPTIONS} value={form.type} onChange={changeType} />
+          <SegmentedControl fullWidth size="md" data={TYPE_OPTIONS} value={form.type} onChange={changeType} />
 
           {form.type === 'ADJUSTMENT' && (
             <SegmentedControl fullWidth size="xs" value={form.direction} onChange={(direction) => set({ direction })}
@@ -184,25 +188,27 @@ export function TransactionModal({ opened, onClose, transaction, defaults }) {
           )}
 
           <SimpleGrid cols={2} spacing="sm">
-            <TextInput label="时间" type="datetime-local" value={form.time} error={errors.time}
+            <TextInput label="什么时候" type="datetime-local" value={form.time} error={errors.time}
               onChange={(event) => set({ time: event.currentTarget.value })} />
-            <TextInput label={form.type === 'INCOME' ? '付款方' : '交易对象'} placeholder={form.type === 'TRANSFER' ? '可选' : '如：便利店'}
+            <TextInput label={form.type === 'INCOME' ? '谁给的' : '在哪儿花的'} placeholder={form.type === 'TRANSFER' ? '可选' : form.type === 'INCOME' ? '如：公司' : '如：楼下便利店'}
               maxLength={256} value={form.counterparty} onChange={(event) => set({ counterparty: event.currentTarget.value })} />
           </SimpleGrid>
-          <TextInput label="备注" placeholder="可选" maxLength={256} value={form.remark}
+          <TextInput label="备注" placeholder="想说点什么～（可选）" maxLength={256} value={form.remark}
             onChange={(event) => set({ remark: event.currentTarget.value })} />
 
           <Group justify="space-between" mt={4}>
             {editing ? (
-              <ConfirmAction message="删除后相关账户余额会自动回滚，确定删除这笔流水？" onConfirm={remove} position="top-start">
+              <ConfirmAction message="删掉后账户余额会自动退回，确定要删除这一笔吗？" onConfirm={remove} position="top-start">
                 <Button variant="subtle" color="red" leftSection={<Trash2 size={16} />}>删除</Button>
               </ConfirmAction>
             ) : (
-              <Button variant="subtle" onClick={() => save(true)} loading={saving}>保存并再记一笔</Button>
+              <Button variant="subtle" onClick={() => save(true)} loading={saving}>保存，再记一笔</Button>
             )}
             <Group gap="sm">
               <Button variant="default" onClick={onClose}>取消</Button>
-              <Button type="submit" loading={saving}>保存</Button>
+              <Button type="submit" loading={saving} variant="gradient" gradient={{ from: 'berry.6', to: '#ff8fb8', deg: 135 }}>
+                {editing ? '保存修改' : '记好了'}
+              </Button>
             </Group>
           </Group>
         </Stack>

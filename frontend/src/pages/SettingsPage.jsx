@@ -1,7 +1,7 @@
 import {
   ActionIcon, Badge, Button, Card, Checkbox, Grid, Group, Modal, NumberInput, SegmentedControl, Stack, Text, TextInput, Tooltip,
 } from '@mantine/core';
-import { Building2, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import { AccountAvatar } from '../components/AccountAvatar';
@@ -206,7 +206,8 @@ export function SettingsPage() {
     <>
       <PageHeader
         title="机构与类型"
-        description="账户归属于某个机构的某种类型；类型的性质决定余额是资产还是负债。"
+        emoji="🏦"
+        description="账户属于某个机构的某种类型，类型决定它是资产还是负债～"
         actions={(
           <>
             <Button variant="default" leftSection={<Sparkles size={16} />} onClick={() => setPresetOpened(true)}>添加常用机构</Button>
@@ -217,7 +218,7 @@ export function SettingsPage() {
 
       {!providers.length ? (
         <Card>
-          <EmptyState icon={Building2} title="还没有机构" description="从常用的银行和支付平台开始，或手动添加。"
+          <EmptyState mood="calm" title="还没有机构" description="从常用的银行和支付平台开始吧，一键就能加好～"
             action={<Button leftSection={<Sparkles size={16} />} onClick={() => setPresetOpened(true)}>添加常用机构</Button>} />
         </Card>
       ) : (

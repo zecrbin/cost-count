@@ -6,11 +6,11 @@ export function MonthSwitcher({ value, onChange }) {
   const thisMonth = currentMonth();
   return (
     <Group gap={4} wrap="nowrap">
-      <ActionIcon variant="default" size={34} radius="md" onClick={() => onChange(shiftMonth(value, -1))} aria-label="上个月">
+      <ActionIcon variant="light" size={36} onClick={() => onChange(shiftMonth(value, -1))} aria-label="上个月">
         <ChevronLeft size={16} />
       </ActionIcon>
-      <Text fw={600} w={96} ta="center" className="num">{formatMonth(value)}</Text>
-      <ActionIcon variant="default" size={34} radius="md" onClick={() => onChange(shiftMonth(value, 1))} aria-label="下个月"
+      <Text miw={120} px={4} ta="center" className="num" style={{ whiteSpace: 'nowrap' }}>📅 {formatMonth(value)}</Text>
+      <ActionIcon variant="light" size={36} onClick={() => onChange(shiftMonth(value, 1))} aria-label="下个月"
         disabled={isSameMonth(value, thisMonth)}>
         <ChevronRight size={16} />
       </ActionIcon>

@@ -67,7 +67,7 @@ export function AccountDrawer({ accountId, onClose, onEdit, onAdjust }) {
           <div>
             <Group gap={6}>
               <Text fw={650}>{account.accName}</Text>
-              {account.status === 0 && <Badge color="gray">已停用</Badge>}
+              {account.status === 0 && <Badge color="gray">😴 已停用</Badge>}
             </Group>
             <Text size="xs" c="dimmed">
               {account.providerName} · {account.typeName}{account.accTailNum ? ` · 尾号 ${account.accTailNum}` : ''}
@@ -82,8 +82,8 @@ export function AccountDrawer({ accountId, onClose, onEdit, onAdjust }) {
             <Money value={account.balance} className="cc-hero-value" display="block" mt={4} />
             {usage != null && (
               <>
-                <Progress value={Math.min(usage, 100)} mt="sm" size={6} color={usage > 80 ? 'red' : 'indigo'} />
-                <Text size="xs" c="dimmed" mt={6}>已用 {Math.round(usage)}% · 可用 {formatMoney(limit - toNumber(account.balance))}</Text>
+                <Progress value={Math.min(usage, 100)} mt="sm" size={10} color={usage > 80 ? 'pink' : 'berry'} striped={usage > 80} />
+                <Text size="xs" c="dimmed" fw={600} mt={6}>已用 {Math.round(usage)}% · 还能刷 {formatMoney(limit - toNumber(account.balance))}</Text>
               </>
             )}
           </div>
@@ -109,7 +109,7 @@ export function AccountDrawer({ accountId, onClose, onEdit, onAdjust }) {
             </ConfirmAction>
           </Group>
 
-          <SimpleGrid cols={2} spacing="md" p="md" style={{ background: 'var(--cc-surface-muted)', borderRadius: 12 }}>
+          <SimpleGrid cols={2} spacing="md" p="md" style={{ background: 'var(--cc-surface-muted)', borderRadius: 20 }}>
             <InfoItem label="账户性质">{ACCOUNT_KINDS[account.typeCode]?.label || '—'}</InfoItem>
             <InfoItem label={credit ? '初始欠款' : '初始余额'}><Money value={account.initialBalance} inherit /></InfoItem>
             <InfoItem label="起始时间">{account.initialTransactionTime?.slice(0, 16) || '—'}</InfoItem>
@@ -123,14 +123,14 @@ export function AccountDrawer({ accountId, onClose, onEdit, onAdjust }) {
           </SimpleGrid>
 
           <div>
-            <Text className="cc-section-title" mb="sm">{credit ? '待还走势' : '余额走势'}</Text>
+            <Text className="cc-section-title" mb="sm">📈 {credit ? '待还走势' : '余额走势'}</Text>
             {!detail ? (
               <Center h={180}><Loader size="sm" /></Center>
             ) : chartData.length < 2 ? (
-              <Text size="sm" c="dimmed">至少两天有流水后显示走势。</Text>
+              <Text size="sm" c="dimmed" fw={600}>再多记几天，就能看到走势啦 🌱</Text>
             ) : (
-              <AreaChart h={180} data={chartData} dataKey="date" series={[{ name: '余额', color: credit ? 'red.5' : 'indigo.5' }]}
-                curveType="monotone" withDots={false} gridAxis="y" tickLine="none" fillOpacity={0.18}
+              <AreaChart h={180} data={chartData} dataKey="date" series={[{ name: '余额', color: credit ? 'pink.5' : 'berry.5' }]}
+                curveType="monotone" withDots={false} gridAxis="y" tickLine="none" fillOpacity={0.25} strokeDasharray="4 6"
                 valueFormatter={(value) => formatMoney(value)} yAxisProps={{ tickFormatter: formatCompactMoney, width: 48 }}
                 xAxisProps={{ minTickGap: 24 }} />
             )}
@@ -138,12 +138,12 @@ export function AccountDrawer({ accountId, onClose, onEdit, onAdjust }) {
 
           <div>
             <Group justify="space-between" mb="sm">
-              <Text className="cc-section-title">最近流水</Text>
+              <Text className="cc-section-title">🧾 最近流水</Text>
               {detail && detail.total > detail.transactions.length && (
                 <Text size="xs" c="dimmed">显示最近 {detail.transactions.length} / {detail.total} 笔</Text>
               )}
             </Group>
-            <div className="cc-panel" style={{ border: '1px solid var(--cc-border)', borderRadius: 12, overflow: 'hidden' }}>
+            <div className="cc-panel" style={{ borderRadius: 20, overflow: 'hidden' }}>
               {!detail ? (
                 <Center h={120}><Loader size="sm" /></Center>
               ) : detail.transactions.length ? (

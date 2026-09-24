@@ -1,5 +1,5 @@
 import { Button, Card, Center, Group, Loader, SegmentedControl, Select, SimpleGrid, Text, TextInput } from '@mantine/core';
-import { Plus, ReceiptText, Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchAllTransactions } from '../api';
 import { AccountSelect } from '../components/AccountSelect';
@@ -16,9 +16,9 @@ import { notifyError } from '../lib/notify';
 
 const TYPE_FILTERS = [
   { value: 'ALL', label: '全部' },
-  { value: 'EXPENSE', label: '支出' },
-  { value: 'INCOME', label: '收入' },
-  { value: 'TRANSFER', label: '转账' },
+  { value: 'EXPENSE', label: '💸 支出' },
+  { value: 'INCOME', label: '💰 收入' },
+  { value: 'TRANSFER', label: '🔁 转账' },
   { value: 'OTHER', label: '其他' },
 ];
 
@@ -93,7 +93,8 @@ export function TransactionsPage() {
     <>
       <PageHeader
         title="流水"
-        description="按月查看每一笔收支和转账，点击可修改或删除。"
+        emoji="🧾"
+        description="每一笔都在这里，点一下就能修改或删除～"
         actions={<Button visibleFrom="sm" leftSection={<Plus size={16} />} onClick={() => openTransaction()}>记一笔</Button>}
       />
 
@@ -110,11 +111,11 @@ export function TransactionsPage() {
           <TextInput placeholder="搜索交易对象、备注" leftSection={<Search size={15} />} value={keyword}
             onChange={(event) => setKeyword(event.currentTarget.value)} />
         </SimpleGrid>
-        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md" mt="lg" pt="md" style={{ borderTop: '1px solid var(--cc-border)' }}>
-          <SummaryItem label="收入"><Money value={summary.income} tone="income" fw={650} size="lg" /></SummaryItem>
-          <SummaryItem label="支出"><Money value={summary.expense} tone="expense" fw={650} size="lg" /></SummaryItem>
-          <SummaryItem label="结余"><Money value={summary.balance} sign fw={650} size="lg" /></SummaryItem>
-          <SummaryItem label="笔数"><Text fw={650} size="lg" className="num">{summary.count}</Text></SummaryItem>
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md" mt="lg" pt="md" style={{ borderTop: '1px dashed var(--cc-border)' }}>
+          <SummaryItem label="💰 收入"><Money value={summary.income} tone="income" size="xl" /></SummaryItem>
+          <SummaryItem label="💸 支出"><Money value={summary.expense} tone="expense" size="xl" /></SummaryItem>
+          <SummaryItem label="🐷 结余"><Money value={summary.balance} sign size="xl" /></SummaryItem>
+          <SummaryItem label="📝 笔数"><Text size="xl" className="num">{summary.count}</Text></SummaryItem>
         </SimpleGrid>
       </Card>
 
@@ -122,8 +123,8 @@ export function TransactionsPage() {
         {filtered === null ? (
           <Center h={240}><Loader size="sm" /></Center>
         ) : filtered.length === 0 ? (
-          <EmptyState icon={ReceiptText} title={hasFilters ? '没有符合条件的流水' : '这个月还没有流水'}
-            description={hasFilters ? '试试调整筛选条件或切换月份。' : '记录第一笔收支后会显示在这里。'}
+          <EmptyState mood={hasFilters ? 'calm' : 'sleepy'} title={hasFilters ? '没找到符合条件的流水' : '这个月还空空的'}
+            description={hasFilters ? '换个筛选条件或切换月份试试？' : '记下第一笔，小猪就醒啦～'}
             action={!hasFilters && <Button variant="light" leftSection={<Plus size={16} />} onClick={() => openTransaction()}>记一笔</Button>} />
         ) : (
           <TransactionList transactions={filtered} onSelect={openTransaction} showBalance={Boolean(accountId)}

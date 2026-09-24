@@ -1,10 +1,3 @@
-import {
-  ArrowLeftRight, Baby, BookOpen, Briefcase, Bus, Car, Coffee, Coins, CreditCard, Dumbbell, Ellipsis, Film,
-  Gamepad2, Gift, GraduationCap, HeartPulse, House, Landmark, Music, PawPrint, PiggyBank, Pill, Plane, Receipt,
-  Scale, Shirt, ShoppingBag, ShoppingCart, Smartphone, Sparkles, TrendingUp, Undo2, Users, Utensils, Wifi,
-  Wrench, Zap,
-} from 'lucide-react';
-
 /** 流水类型：label 为界面名称，tone 决定金额颜色。 */
 export const TRANSACTION_TYPES = {
   EXPENSE: { label: '支出', tone: 'expense' },
@@ -25,23 +18,45 @@ export const ACCOUNT_KINDS = {
   CREDIT: { label: '负债账户', short: '信用', hint: '余额为待还金额' },
 };
 
-/** 分类可选图标，分类表的 icon 字段保存这里的键名。 */
-export const CATEGORY_ICONS = {
-  Utensils, Coffee, ShoppingBag, ShoppingCart, Shirt, Sparkles, Car, Bus, Plane, House, Zap, Wifi, Smartphone,
-  HeartPulse, Pill, Dumbbell, Gamepad2, Film, Music, BookOpen, GraduationCap, Gift, Users, Baby, PawPrint,
-  Wrench, Receipt, Landmark, Briefcase, Coins, TrendingUp, PiggyBank, Undo2, ArrowLeftRight, CreditCard, Ellipsis,
+/** 分类可选的 emoji，分类表的 icon 字段直接保存 emoji。 */
+export const CATEGORY_EMOJIS = [
+  '🍚', '🍜', '🍔', '🍱', '🥐', '☕', '🧋', '🍰', '🍎', '🥬', '🍺', '🍿',
+  '🚇', '🚕', '🚗', '⛽', '🚲', '✈️', '🚄', '🅿️',
+  '🛍️', '🛒', '👗', '👟', '💄', '🧴', '🧻', '📱', '💻', '🎧',
+  '🏠', '💡', '💧', '🔥', '🛋️', '🔧', '📞', '🌐', '📺',
+  '💊', '🏥', '🦷', '💪', '🎬', '🎮', '🎤', '🎨', '📚', '✏️', '🎓',
+  '🎁', '🧧', '❤️', '👶', '🐶', '🐱', '💼', '💰', '📈', '🏦', '🪙', '🧾', '💳', '🔁', '🐷', '✨', '📦',
+];
+
+/** 早期版本保存的是图标名，这里映射为 emoji 以兼容旧数据。 */
+const LEGACY_ICON_EMOJI = {
+  Utensils: '🍜', Coffee: '☕', ShoppingBag: '🛍️', ShoppingCart: '🛒', Shirt: '👗', Sparkles: '✨', Car: '🚗',
+  Bus: '🚇', Plane: '✈️', House: '🏠', Zap: '💡', Wifi: '🌐', Smartphone: '📱', HeartPulse: '💊', Pill: '💊',
+  Dumbbell: '💪', Gamepad2: '🎮', Film: '🎬', Music: '🎤', BookOpen: '📚', GraduationCap: '🎓', Gift: '🎁',
+  Users: '👥', Baby: '👶', PawPrint: '🐾', Wrench: '🔧', Receipt: '🧾', Landmark: '🏦', Briefcase: '💼',
+  Coins: '🪙', TrendingUp: '📈', PiggyBank: '🐷', Undo2: '↩️', ArrowLeftRight: '🔁', CreditCard: '💳', Ellipsis: '📦',
 };
 
-export const TYPE_FALLBACK_ICONS = {
-  EXPENSE: Receipt,
-  INCOME: Coins,
-  TRANSFER: ArrowLeftRight,
-  ADJUSTMENT: Scale,
-  INITIAL: PiggyBank,
+export const TYPE_EMOJI = {
+  EXPENSE: '💸',
+  INCOME: '💰',
+  TRANSFER: '🔁',
+  ADJUSTMENT: '⚖️',
+  INITIAL: '🐷',
 };
+
+/** 取分类的 emoji：自身 → 上级分类 → 名称首字（由调用方兜底）。 */
+export function categoryEmoji(category) {
+  for (const icon of [category?.icon, category?.root?.icon]) {
+    if (!icon) continue;
+    if (LEGACY_ICON_EMOJI[icon]) return LEGACY_ICON_EMOJI[icon];
+    if (!/^[A-Za-z0-9]+$/.test(icon)) return icon;
+  }
+  return null;
+}
 
 /** 分类和账户没有颜色字段，按名称稳定地映射到一组协调的颜色。 */
-export const PALETTE = ['#4263eb', '#0ca678', '#f08c00', '#e64980', '#7048e8', '#1098ad', '#d9480f', '#5c940d', '#ae3ec9', '#1971c2'];
+export const PALETTE = ['#8b5cf6', '#ff6b9a', '#1fb88a', '#ffb020', '#4da3ff', '#ff8a5b', '#b267e6', '#1fb5c9', '#f25c7a', '#7cc95b'];
 
 export function colorFromText(text = '') {
   let hash = 0;
