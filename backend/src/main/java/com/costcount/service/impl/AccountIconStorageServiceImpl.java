@@ -29,6 +29,8 @@ public class AccountIconStorageServiceImpl implements AccountIconStorageService 
     private static final int ICON_WIDTH = 512;
     /** 银行卡图标画布高度。 */
     private static final int ICON_HEIGHT = 320;
+    /** 系统生成图标的相对路径前缀，对应 {@code /icons/accounts/**} 静态资源映射。 */
+    private static final String GENERATED_ICON_PREFIX = "accounts/";
     /** 提供方名称字体候选，按顺序选取本机已安装且能显示中文的字体。 */
     private static final List<String> NAME_FONT_CANDIDATES = List.of(
             "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Source Han Sans SC",
@@ -52,20 +54,25 @@ public class AccountIconStorageServiceImpl implements AccountIconStorageService 
                 graphics.dispose();
             }
             ImageIO.write(image, "png", file.toFile());
-            return "accounts/" + accountId + ".png";
+            return GENERATED_ICON_PREFIX + accountId + ".png";
         } catch (IOException exception) {
             throw new BizException(500, "账户图标生成失败");
         }
     }
 
     @Override
+    public boolean isGeneratedIcon(String iconPath) {
+        return StringUtils.hasText(iconPath) && iconPath.startsWith(GENERATED_ICON_PREFIX);
+    }
+
+    @Override
     public void deleteBankCardIcon(String iconPath) {
-        if (!StringUtils.hasText(iconPath) || !iconPath.startsWith("accounts/")) {
+        if (!isGeneratedIcon(iconPath)) {
             return;
         }
         try {
             Path directory = Path.of(accountIconDir).toAbsolutePath().normalize();
-            Path file = directory.resolve(iconPath.substring("accounts/".length())).normalize();
+            Path file = directory.resolve(iconPath.substring(GENERATED_ICON_PREFIX.length())).normalize();
             // 规范化后再次校验父目录，避免异常路径越界删除其他文件。
             if (file.startsWith(directory)) {
                 Files.deleteIfExists(file);

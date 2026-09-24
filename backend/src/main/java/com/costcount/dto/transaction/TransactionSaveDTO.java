@@ -2,6 +2,7 @@ package com.costcount.dto.transaction;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @Schema(description = "交易流水保存参数")
 public class TransactionSaveDTO {
 
-    @Schema(description = "ID，修改时必填", example = "40001")
+    @Schema(description = "ID，仅修改时使用", example = "40001")
     private Long id;
 
     @Schema(description = "流水类型：INCOME收入、EXPENSE支出、TRANSFER转账、ADJUSTMENT余额调整", example = "EXPENSE", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -32,12 +33,13 @@ public class TransactionSaveDTO {
     @Schema(description = "收入或支出分类 ID；收入和支出时必填", example = "50001")
     private Long categoryId;
 
-    @Schema(description = "业务金额，始终为正数", example = "99.99", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "业务金额不能为空")
+    @Schema(description = "业务金额，始终为正数；ADJUSTMENT 时由调整值自动计算", example = "99.99")
     @DecimalMin(value = "0.01", message = "业务金额必须大于0")
+    @Digits(integer = 16, fraction = 2, message = "业务金额最多保留2位小数")
     private BigDecimal amount;
 
     @Schema(description = "余额调整值，可正可负，仅 ADJUSTMENT 时必填", example = "-20.00")
+    @Digits(integer = 16, fraction = 2, message = "余额调整值最多保留2位小数")
     private BigDecimal balanceChange;
 
     @Schema(description = "交易发生时间", example = "2026-09-03 12:30:00", requiredMode = Schema.RequiredMode.REQUIRED)

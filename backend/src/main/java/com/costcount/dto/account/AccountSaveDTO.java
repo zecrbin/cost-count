@@ -2,6 +2,8 @@ package com.costcount.dto.account;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -33,6 +35,8 @@ public class AccountSaveDTO {
     private String accTailNum;
 
     @Schema(description = "初始资金；资产账户为初始余额，负债账户为初始欠款，仅新增时生效", example = "1000.00")
+    @DecimalMin(value = "0.00", message = "初始资金不能小于0")
+    @Digits(integer = 16, fraction = 2, message = "初始资金最多保留2位小数")
     private BigDecimal initialBalance;
 
     @Schema(description = "初始资金发生时间，仅新增时生效，默认当前时间", example = "2026-09-03 09:00:00")
@@ -46,7 +50,7 @@ public class AccountSaveDTO {
     @DecimalMin(value = "0.00", message = "理想信用额度不能小于0")
     private BigDecimal idealCreditLimit;
 
-    @Schema(description = "账户展示图标 URL", example = "accounts/cmb.png")
+    @Schema(description = "账户展示图标 URL；为空且填写尾号时自动生成银行卡图标", example = "providers/cmb.png")
     @Size(max = 256, message = "图标路径不能超过256个字符")
     private String icon;
 
@@ -55,6 +59,8 @@ public class AccountSaveDTO {
     private Integer sort = 0;
 
     @Schema(description = "账户状态：1正常，0停用", example = "1")
+    @Min(value = 0, message = "账户状态只能是0或1")
+    @Max(value = 1, message = "账户状态只能是0或1")
     private Integer status = 1;
 
     @Schema(description = "账户备注", example = "工资卡")

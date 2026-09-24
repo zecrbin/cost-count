@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @Schema(description = "账户信息")
@@ -33,8 +34,14 @@ public class AccountVO {
     @Schema(description = "账户尾号", example = "1234")
     private String accTailNum;
 
-    @Schema(description = "当前余额", example = "1000.00")
+    @Schema(description = "当前余额；资产账户为可用余额，信用账户为待还金额", example = "1000.00")
     private BigDecimal balance;
+
+    @Schema(description = "初始资金；资产账户为初始余额，负债账户为初始欠款", example = "1000.00")
+    private BigDecimal initialBalance;
+
+    @Schema(description = "初始资金发生时间", example = "2026-09-03 09:00:00")
+    private LocalDateTime initialTransactionTime;
 
     @Schema(description = "当前信用额度", example = "50000.00")
     private BigDecimal creditLimit;

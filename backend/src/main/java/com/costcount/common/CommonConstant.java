@@ -17,4 +17,7 @@ public interface CommonConstant {
 
     /** 账户类型：信用账户。 */
     String CREDIT_ACCOUNT_TYPE = "CREDIT";
+
+    /** 根分类的父分类 ID。 */
+    Long ROOT_CATEGORY_PID = 0L;
 }

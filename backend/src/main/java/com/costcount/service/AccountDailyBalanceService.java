@@ -1,10 +1,13 @@
 package com.costcount.service;
 
+import com.costcount.dto.account.AccountDailyBalanceQueryDTO;
 import com.costcount.entity.AccountDailyBalance;
+import com.costcount.vo.account.AccountDailyBalanceVO;
 import com.github.yulichang.base.MPJBaseService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,6 +24,9 @@ public interface AccountDailyBalanceService extends MPJBaseService<AccountDailyB
      */
     void appendTransactionChanges(LocalDate statDate, Map<Long, BigDecimal> changes,
                                   Map<Long, BigDecimal> closingBalances);
+
+    /** 按日期升序查询账户的活动日余额快照；没有流水的日期不产生快照。 */
+    List<AccountDailyBalanceVO> listAccountDailyBalances(AccountDailyBalanceQueryDTO query);
 
     /** 查询指定日期之前最近活动日的期末余额，无历史快照时返回零。 */
     BigDecimal getClosingBalanceBefore(Long accountId, LocalDate statDate);

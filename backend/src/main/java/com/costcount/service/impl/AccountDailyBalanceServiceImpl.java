@@ -1,6 +1,8 @@
 package com.costcount.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.costcount.common.LedgerBalance;
+import com.costcount.dto.account.AccountDailyBalanceQueryDTO;
 import com.costcount.entity.AccountDailyBalance;
 import com.costcount.entity.AccountType;
 import com.costcount.entity.Transaction;
@@ -10,9 +12,11 @@ import com.costcount.mapper.AccountMapper;
 import com.costcount.mapper.AccountTypeMapper;
 import com.costcount.mapper.TransactionMapper;
 import com.costcount.service.AccountDailyBalanceService;
+import com.costcount.vo.account.AccountDailyBalanceVO;
 import com.github.yulichang.base.MPJBaseServiceImpl;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.BeanUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -82,6 +86,27 @@ public class AccountDailyBalanceServiceImpl
         if (!updates.isEmpty()) {
             baseMapper.updateById(updates);
         }
+    }
+
+    @Override
+    public List<AccountDailyBalanceVO> listAccountDailyBalances(AccountDailyBalanceQueryDTO query) {
+        if (query.getStartDate() != null && query.getEndDate() != null
+                && query.getStartDate().isAfter(query.getEndDate())) {
+            throw new BizException(400, "开始日期不能晚于结束日期");
+        }
+        if (accountMapper.selectById(query.getAccountId()) == null) {
+            throw new BizException(404, "账户不存在");
+        }
+        List<AccountDailyBalance> balances = baseMapper.selectList(new LambdaQueryWrapper<AccountDailyBalance>()
+                .eq(AccountDailyBalance::getAccountId, query.getAccountId())
+                .ge(query.getStartDate() != null, AccountDailyBalance::getStatDate, query.getStartDate())
+                .le(query.getEndDate() != null, AccountDailyBalance::getStatDate, query.getEndDate())
+                .orderByAsc(AccountDailyBalance::getStatDate));
+        return balances.stream().map(balance -> {
+            AccountDailyBalanceVO vo = new AccountDailyBalanceVO();
+            BeanUtils.copyProperties(balance, vo);
+            return vo;
+        }).toList();
     }
 
     @Override
@@ -168,8 +193,8 @@ public class AccountDailyBalanceServiceImpl
     /**
      * 计算当前账户在一笔流水中的余额变化。
      *
-     * <p>主账户直接使用已落库的变化值；转账目标账户没有独立变化字段，需要按账户性质反推。
-     * 资产账户转入增加余额，信用账户转入则减少待还金额。</p>
+     * <p>主账户直接使用已落库的变化值；转账目标账户没有独立变化字段，需要按账户性质反推，
+     * 规则见 {@link LedgerBalance#targetChange(BigDecimal, boolean)}。</p>
      */
     private BigDecimal calculateChange(Long accountId, Transaction transaction, boolean credit) {
         if (accountId.equals(transaction.getAccountId())) {
@@ -178,7 +203,7 @@ public class AccountDailyBalanceServiceImpl
         if (!TRANSFER.equals(transaction.getTransactionType()) || transaction.getAmount() == null) {
             return BigDecimal.ZERO;
         }
-        return credit ? transaction.getAmount().negate() : transaction.getAmount();
+        return LedgerBalance.targetChange(transaction.getAmount(), credit);
     }
 
     /** 构造一个活动日的余额快照。 */

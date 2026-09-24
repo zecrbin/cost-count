@@ -5,15 +5,11 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.costcount.dto.transaction.TransactionQueryDTO;
 import com.costcount.entity.Account;
 import com.costcount.entity.Transaction;
-import com.costcount.exception.BizException;
-import com.costcount.dto.transaction.TransactionSaveDTO;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TransactionServiceImplTest {
@@ -47,13 +43,5 @@ class TransactionServiceImplTest {
         assertTrue(sql.contains("target_account_id"), sql);
         assertTrue(sql.contains(" OR "), sql);
         assertTrue(sql.contains("transaction_type"), sql);
-    }
-
-    @Test
-    void saveTransactionShouldRejectUntilImplemented() {
-        BizException exception = assertThrows(BizException.class,
-                () -> service.saveTransaction(new TransactionSaveDTO()));
-
-        assertEquals(501, exception.getCode());
     }
 }

@@ -12,6 +12,9 @@ public class TransactionQueryDTO {
     @Schema(description = "关联账户 ID，匹配主账户或转账目标账户", example = "30001")
     private Long accountId;
 
+    @Schema(description = "分类 ID", example = "50001")
+    private Long categoryId;
+
     @Schema(description = "流水类型：INITIAL、INCOME、EXPENSE、TRANSFER、ADJUSTMENT", example = "EXPENSE")
     private String transactionType;
 

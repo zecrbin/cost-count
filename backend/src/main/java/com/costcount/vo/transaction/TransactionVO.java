@@ -22,16 +22,21 @@ public class TransactionVO {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long categoryId;
 
+    @Schema(description = "分类名称", example = "午餐")
+    private String categoryName;
+
     @Schema(description = "主账户 ID", example = "30001")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long accountId;
 
+    @Schema(description = "主账户名称", example = "招商银行储蓄卡")
     private String accountName;
 
     @Schema(description = "目标账户 ID", example = "30002")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long targetAccountId;
 
+    @Schema(description = "目标账户名称", example = "招商银行信用卡")
     private String targetAccountName;
 
     @Schema(description = "业务金额", example = "99.99")
