@@ -43,7 +43,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -291,6 +293,17 @@ class LedgerFlowIntegrationTest {
         mockMvc.perform(post("/api/transactions/page").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.total").value(2));
+    }
+
+    @Test
+    void builtinIconsShouldBeServedAndMissingOnesReturn404() throws Exception {
+        for (String path : List.of("providers/alipay.png", "providers/wechat.png", "providers/jd.png",
+                "account-types/huabei.png", "account-types/wechat-change.png", "account-types/jd-baitiao.png")) {
+            mockMvc.perform(get("/icons/default/" + path))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType(MediaType.IMAGE_PNG));
+        }
+        mockMvc.perform(get("/icons/default/providers/not-exist.png")).andExpect(status().isNotFound());
     }
 
     // ---------- helpers ----------

@@ -32,7 +32,7 @@ export const PRESET_PROVIDERS = [
   ['中国银行', 'providers/boc.png', [['储蓄卡', 'DEBIT'], ['信用卡', 'CREDIT']]],
   ['建设银行', 'providers/ccb.png', [['储蓄卡', 'DEBIT'], ['信用卡', 'CREDIT']]],
   ['农业银行', 'providers/abc.png', [['储蓄卡', 'DEBIT'], ['信用卡', 'CREDIT']]],
-  ['支付宝', null, [['余额', 'DEBIT'], ['余额宝', 'DEBIT'], ['花呗', 'CREDIT']]],
-  ['微信', null, [['零钱', 'DEBIT'], ['零钱通', 'DEBIT']]],
-  ['京东', null, [['白条', 'CREDIT']]],
+  ['支付宝', 'providers/alipay.png', [['余额', 'DEBIT'], ['余额宝', 'DEBIT'], ['花呗', 'CREDIT']]],
+  ['微信', 'providers/wechat.png', [['零钱', 'DEBIT'], ['零钱通', 'DEBIT']]],
+  ['京东', 'providers/jd.png', [['白条', 'CREDIT']]],
 ];

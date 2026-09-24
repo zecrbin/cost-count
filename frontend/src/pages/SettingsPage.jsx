@@ -46,7 +46,7 @@ function ProviderModal({ opened, onClose, provider, onSaved }) {
         <TextInput label="机构名称" placeholder="如：招商银行、支付宝" maxLength={128} value={name} data-autofocus
           onChange={(event) => setName(event.currentTarget.value)} />
         <TextInput label="图标路径" placeholder="可选，如 providers/cmb.png" maxLength={256} value={icon}
-          description="内置图标：providers/cmb.png、boc.png、ccb.png、abc.png；也可填写图片 URL"
+          description="留空时按名称自动匹配内置图标（招行、中行、建行、农行、支付宝、微信、京东），也可填写图片 URL"
           onChange={(event) => setIcon(event.currentTarget.value)} />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onClose}>取消</Button>

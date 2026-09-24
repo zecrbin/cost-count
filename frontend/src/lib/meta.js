@@ -73,16 +73,38 @@ export function iconUrl(path) {
   return `/icons/default/${path.split('/').map(encodeURIComponent).join('/')}`;
 }
 
-/** 内置的账户类型图标，文件名为类型名或"机构名+类型名"。 */
-const BUILTIN_TYPE_ICONS = new Set(['京东白条', '余额宝', '微信零钱', '微信零钱通', '支付宝余额', '花呗']);
+/**
+ * 内置图标（后端 static/icons/default），按名称匹配。文件名统一用英文，
+ * 避免中文文件名在不同系统的 JVM 文件编码下无法读取。
+ */
+const BUILTIN_TYPE_ICONS = {
+  支付宝余额: 'alipay-balance', 余额宝: 'yuebao', 花呗: 'huabei',
+  微信零钱: 'wechat-change', 零钱: 'wechat-change', 微信零钱通: 'wechat-lct', 零钱通: 'wechat-lct',
+  京东白条: 'jd-baitiao', 白条: 'jd-baitiao',
+};
 
+const BUILTIN_PROVIDER_ICONS = {
+  招商银行: 'cmb', 招行: 'cmb', 中国银行: 'boc', 中行: 'boc', 建设银行: 'ccb', 建行: 'ccb',
+  农业银行: 'abc', 农行: 'abc', 支付宝: 'alipay', 微信: 'wechat', 微信支付: 'wechat', 京东: 'jd', 京东金融: 'jd',
+};
+
+/** 机构图标：已配置的路径优先，否则按机构名称匹配内置图标。 */
+export function providerIconUrl(provider) {
+  if (!provider) return null;
+  if (provider.icon) return iconUrl(provider.icon);
+  const builtin = BUILTIN_PROVIDER_ICONS[provider.providerName?.trim()];
+  return builtin ? iconUrl(`providers/${builtin}.png`) : null;
+}
+
+/** 账户图标：账户自身 → 内置类型图标（如花呗、余额宝）→ 机构图标。 */
 export function accountIconUrl(account) {
   if (!account) return null;
   if (account.icon) return iconUrl(account.icon);
-  const candidates = [`${account.providerName || ''}${account.typeName || ''}`, account.typeName];
-  const builtin = candidates.find((name) => name && BUILTIN_TYPE_ICONS.has(name));
-  if (builtin) return iconUrl(`account-types/${builtin}.png`);
-  return iconUrl(account.providerIcon);
+  const providerName = account.providerName?.trim() || '';
+  const typeName = account.typeName?.trim() || '';
+  const builtinType = BUILTIN_TYPE_ICONS[`${providerName}${typeName}`] || BUILTIN_TYPE_ICONS[typeName];
+  if (builtinType) return iconUrl(`account-types/${builtinType}.png`);
+  return providerIconUrl({ providerName, icon: account.providerIcon });
 }
 
 export function isCredit(accountOrType) {
