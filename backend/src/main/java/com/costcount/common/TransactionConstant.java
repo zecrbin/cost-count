@@ -11,7 +11,10 @@ public interface TransactionConstant {
     String EXPENSE = "EXPENSE";
     /** 账户之间的转账流水。 */
     String TRANSFER = "TRANSFER";
-    /** 不对应实际收支、仅用于校正余额的流水。 */
+    /**
+     * 余额调整，修正账面与实际余额的小额偏差，典型场景是利率变动后仍按旧利率计算造成的利息差额。
+     * 正常的利息记为收入，不用此类型。余额修正接口记账时也使用此类型。
+     */
     String ADJUSTMENT = "ADJUSTMENT";
 
     /** 用户手工录入来源。 */

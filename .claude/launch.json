@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend-h2",
+      "runtimeExecutable": "D:/jdk-21/bin/java.exe",
+      "runtimeArgs": ["@C:/Users/zzabc/AppData/Local/Temp/claude/D--workspace-cost-count/4a75f5f6-5aaa-450d-b28e-a166f38ac57e/scratchpad/backend-dev.args"],
+      "port": 8081
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "D:/workspace/cost-count/frontend", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}

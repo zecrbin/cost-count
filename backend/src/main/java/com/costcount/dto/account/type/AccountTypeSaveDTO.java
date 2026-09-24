@@ -18,7 +18,7 @@ public class AccountTypeSaveDTO {
     @NotNull(message = "账户提供方 ID 不能为空")
     private Long providerId;
 
-    @Schema(description = "账户类型编码", example = "DEBIT", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "账户类型编码，创建后不可修改", example = "DEBIT", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "账户类型编码不能为空")
     @Size(max = 64, message = "账户类型编码不能超过64个字符")
     private String typeCode;

@@ -1,6 +1,8 @@
 package com.costcount.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.costcount.common.BalanceChanges;
+import com.costcount.entity.Account;
 import com.costcount.entity.AccountDailyBalance;
 import com.costcount.entity.AccountType;
 import com.costcount.entity.Transaction;
@@ -19,14 +21,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static com.costcount.common.TransactionConstant.TRANSFER;
+import static com.costcount.common.CommonConstant.isCreditType;
+import static com.costcount.common.TransactionConstant.ADJUSTMENT;
 
-/** 根据流水事实重建账户活动日余额缓存。 */
+/** 维护账户活动日余额缓存：末尾流水直接追加，补充流水按流水事实重建。 */
 @Service
 public class AccountDailyBalanceServiceImpl
         extends MPJBaseServiceImpl<AccountDailyBalanceMapper, AccountDailyBalance>
@@ -42,53 +44,21 @@ public class AccountDailyBalanceServiceImpl
     private AccountTypeMapper accountTypeMapper;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void appendTransactionChanges(LocalDate statDate, Map<Long, BigDecimal> changes,
-                                         Map<Long, BigDecimal> closingBalances) {
-        if (changes == null || changes.isEmpty()) {
-            return;
-        }
-        List<AccountDailyBalance> dailyBalances = baseMapper.selectList(
-                new LambdaQueryWrapper<AccountDailyBalance>()
-                .in(AccountDailyBalance::getAccountId, changes.keySet())
-                .eq(AccountDailyBalance::getStatDate, statDate));
-        Map<Long, AccountDailyBalance> dailyBalanceMap = new HashMap<>();
-        dailyBalances.forEach(item -> dailyBalanceMap.put(item.getAccountId(), item));
-
-        List<AccountDailyBalance> inserts = new ArrayList<>();
-        List<AccountDailyBalance> updates = new ArrayList<>();
-        for (Map.Entry<Long, BigDecimal> entry : changes.entrySet()) {
-            Long accountId = entry.getKey();
-            BigDecimal change = entry.getValue();
-            BigDecimal closingBalance = closingBalances.get(accountId);
-            if (closingBalance == null) {
-                throw new BizException(500, "账户余额计算异常");
-            }
-            AccountDailyBalance dailyBalance = dailyBalanceMap.get(accountId);
-            if (dailyBalance == null) {
-                inserts.add(buildDailyBalance(
-                        accountId, statDate, closingBalance.subtract(change), change));
-                continue;
-            }
-            dailyBalance.setTransactionChange(defaultZero(dailyBalance.getTransactionChange()).add(change));
-            dailyBalance.setClosingBalance(closingBalance);
-            dailyBalance.setRebuiltTime(LocalDateTime.now());
-            updates.add(dailyBalance);
-        }
-        if (!inserts.isEmpty()) {
-            baseMapper.insert(inserts);
-        }
-        if (!updates.isEmpty()) {
-            baseMapper.updateById(updates);
-        }
+    public BigDecimal getClosingBalanceBefore(Long accountId, LocalDate statDate) {
+        checkArguments(accountId, statDate);
+        return calculateClosingBalanceBefore(accountId, statDate, isCreditAccount(accountId));
     }
 
     @Override
-    public BigDecimal getClosingBalanceBefore(Long accountId, LocalDate statDate) {
+    public BigDecimal getClosingBalanceBefore(Long accountId, LocalDate statDate, boolean credit) {
+        checkArguments(accountId, statDate);
+        return calculateClosingBalanceBefore(accountId, statDate, credit);
+    }
+
+    private void checkArguments(Long accountId, LocalDate statDate) {
         if (accountId == null || statDate == null) {
             throw new BizException(400, "账户 ID 和快照日期不能为空");
         }
-        return calculateClosingBalanceBefore(accountId, statDate, isCreditAccount(accountId));
     }
 
     private BigDecimal calculateClosingBalanceBefore(Long accountId, LocalDate statDate, boolean credit) {
@@ -115,44 +85,77 @@ public class AccountDailyBalanceServiceImpl
                 gapStartDate == null ? null : gapStartDate.atStartOfDay());
         List<Transaction> gapTransactions = transactionMapper.selectList(gapWrapper);
         for (Transaction transaction : gapTransactions) {
-            closingBalance = closingBalance.add(defaultZero(calculateChange(accountId, transaction, credit)));
+            closingBalance = closingBalance.add(BalanceChanges.of(accountId, transaction, credit));
         }
         return closingBalance;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void rebuildAccountDailyBalance(Long accountId, LocalDate fromDate) {
-        boolean credit = isCreditAccount(accountId);
+    public void appendDailyBalance(Long accountId, LocalDate statDate, BigDecimal change, boolean correction,
+                                   BigDecimal closingBalance) {
+        AccountDailyBalance dailyBalance = lambdaQuery()
+                .eq(AccountDailyBalance::getAccountId, accountId)
+                .eq(AccountDailyBalance::getStatDate, statDate)
+                .one();
+        if (dailyBalance == null) {
+            // 当天第一笔流水：期初即入账前的余额
+            save(buildDailyBalance(accountId, statDate, closingBalance.subtract(change),
+                    change, correction ? change : BigDecimal.ZERO));
+            return;
+        }
+        // 当日变动包含全部流水；余额调整另在修正列里记一份明细，不单独计入余额
+        dailyBalance.setTransactionChange(defaultZero(dailyBalance.getTransactionChange()).add(change));
+        if (correction) {
+            dailyBalance.setCorrectionChange(defaultZero(dailyBalance.getCorrectionChange()).add(change));
+        }
+        dailyBalance.setClosingBalance(closingBalance);
+        dailyBalance.setRebuiltTime(LocalDateTime.now());
+        updateById(dailyBalance);
+    }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void rebuildAccountDailyBalance(Long accountId, LocalDate fromDate) {
+        // 重建会整段删除并重写快照，必须先锁账户：与并发记账交错会互相覆盖，
+        // 或在 uk_account_stat_date 上撞唯一键
+        List<Account> lockedAccounts = accountMapper.selectByIdsForUpdate(List.of(accountId));
+        if (lockedAccounts.isEmpty()) {
+            throw new BizException(404, "账户不存在");
+        }
+
+        boolean credit = isCreditType(resolveTypeCode(lockedAccounts.get(0).getTypeId()));
         BigDecimal openingBalance = fromDate == null
                 ? BigDecimal.ZERO
                 : calculateClosingBalanceBefore(accountId, fromDate, credit);
-        LambdaQueryWrapper<Transaction> transactionWrapper = new LambdaQueryWrapper<Transaction>()
-                .and(wrapper -> wrapper.eq(Transaction::getAccountId, accountId)
-                        .or().eq(Transaction::getTargetAccountId, accountId))
-                .orderByAsc(Transaction::getTransactionTime)
-                .orderByAsc(Transaction::getId);
-        transactionWrapper.ge(fromDate != null, Transaction::getTransactionTime,
-                fromDate == null ? null : fromDate.atStartOfDay());
-        List<Transaction> transactions = transactionMapper.selectList(transactionWrapper);
-        Map<LocalDate, BigDecimal> dailyChanges = new TreeMap<>();
+
+        rebuildDailyBalances(accountId, fromDate, credit, openingBalance,
+                transactionMapper.selectAccountTransactionsFrom(accountId, fromDate));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void rebuildDailyBalances(Long accountId, LocalDate fromDate, boolean credit,
+                                     BigDecimal openingBalance, List<Transaction> transactions) {
+        Map<LocalDate, DailyChange> dailyChanges = new TreeMap<>();
         for (Transaction transaction : transactions) {
             if (transaction.getTransactionTime() == null) {
                 continue;
             }
-            BigDecimal change = calculateChange(accountId, transaction, credit);
-            if (change == null) {
-                continue;
-            }
             LocalDate transactionDate = transaction.getTransactionTime().toLocalDate();
-            dailyChanges.merge(transactionDate, change, BigDecimal::add);
+            // 全部流水计入当日变动，余额调整另记一份到修正列
+            dailyChanges.computeIfAbsent(transactionDate, date -> new DailyChange())
+                    .add(BalanceChanges.of(accountId, transaction, credit),
+                            ADJUSTMENT.equals(transaction.getTransactionType()));
         }
 
+        BigDecimal opening = openingBalance;
         List<AccountDailyBalance> balances = new ArrayList<>();
-        for (Map.Entry<LocalDate, BigDecimal> entry : dailyChanges.entrySet()) {
-            balances.add(buildDailyBalance(accountId, entry.getKey(), openingBalance, entry.getValue()));
-            openingBalance = openingBalance.add(entry.getValue());
+        for (Map.Entry<LocalDate, DailyChange> entry : dailyChanges.entrySet()) {
+            DailyChange dailyChange = entry.getValue();
+            balances.add(buildDailyBalance(accountId, entry.getKey(), opening,
+                    dailyChange.transactionChange, dailyChange.correctionChange));
+            opening = opening.add(dailyChange.transactionChange);
         }
 
         LambdaQueryWrapper<AccountDailyBalance> deleteWrapper = new LambdaQueryWrapper<AccountDailyBalance>()
@@ -165,30 +168,19 @@ public class AccountDailyBalanceServiceImpl
     }
 
     /**
-     * 计算当前账户在一笔流水中的余额变化。
+     * 构造一个活动日的余额快照。
      *
-     * <p>主账户直接使用已落库的变化值；转账目标账户没有独立变化字段，需要按账户性质反推。
-     * 资产账户转入增加余额，信用账户转入则减少待还金额。</p>
+     * @param transactionChange 当日全部流水的余额变动，期末余额只由它推出
+     * @param correctionChange 其中余额调整的部分，是 transactionChange 的子集
      */
-    private BigDecimal calculateChange(Long accountId, Transaction transaction, boolean credit) {
-        if (accountId.equals(transaction.getAccountId())) {
-            return transaction.getBalanceChange();
-        }
-        if (!TRANSFER.equals(transaction.getTransactionType()) || transaction.getAmount() == null) {
-            return BigDecimal.ZERO;
-        }
-        return credit ? transaction.getAmount().negate() : transaction.getAmount();
-    }
-
-    /** 构造一个活动日的余额快照。 */
     private AccountDailyBalance buildDailyBalance(Long accountId, LocalDate statDate, BigDecimal openingBalance,
-                                                   BigDecimal transactionChange) {
+                                                   BigDecimal transactionChange, BigDecimal correctionChange) {
         AccountDailyBalance dailyBalance = new AccountDailyBalance();
         dailyBalance.setAccountId(accountId);
         dailyBalance.setStatDate(statDate);
         dailyBalance.setOpeningBalance(openingBalance);
         dailyBalance.setTransactionChange(transactionChange);
-        dailyBalance.setCorrectionChange(BigDecimal.ZERO);
+        dailyBalance.setCorrectionChange(correctionChange);
         dailyBalance.setClosingBalance(openingBalance.add(transactionChange));
         dailyBalance.setRebuiltTime(LocalDateTime.now());
         return dailyBalance;
@@ -199,14 +191,33 @@ public class AccountDailyBalanceServiceImpl
     }
 
     private boolean isCreditAccount(Long accountId) {
-        var account = accountMapper.selectById(accountId);
+        Account account = accountMapper.selectById(accountId);
         if (account == null) {
             throw new BizException(404, "账户不存在");
         }
-        AccountType accountType = accountTypeMapper.selectById(account.getTypeId());
+        return isCreditType(resolveTypeCode(account.getTypeId()));
+    }
+
+    private String resolveTypeCode(Long typeId) {
+        AccountType accountType = typeId == null ? null : accountTypeMapper.selectById(typeId);
         if (accountType == null) {
             throw new BizException(404, "账户类型不存在");
         }
-        return "CREDIT".equalsIgnoreCase(accountType.getTypeCode());
+        return accountType.getTypeCode();
+    }
+
+    /** 一个活动日内的余额变化：全部流水的合计，以及其中余额调整的部分。 */
+    private static final class DailyChange {
+
+        private BigDecimal transactionChange = BigDecimal.ZERO;
+
+        private BigDecimal correctionChange = BigDecimal.ZERO;
+
+        private void add(BigDecimal change, boolean correction) {
+            transactionChange = transactionChange.add(change);
+            if (correction) {
+                correctionChange = correctionChange.add(change);
+            }
+        }
     }
 }

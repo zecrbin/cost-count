@@ -11,6 +11,7 @@ import com.costcount.exception.BizException;
 import com.costcount.mapper.AccountMapper;
 import com.costcount.mapper.AccountProviderMapper;
 import com.costcount.mapper.AccountTypeMapper;
+import com.costcount.service.AccountService;
 import com.costcount.service.AccountTypeService;
 import com.costcount.vo.account.type.AccountTypeVO;
 import com.github.yulichang.base.MPJBaseServiceImpl;
@@ -36,6 +37,9 @@ public class AccountTypeServiceImpl
 
     @Resource
     private AccountMapper accountMapper;
+
+    @Resource
+    private AccountService accountService;
 
     @Override
     public List<AccountTypeVO> listAccountTypes(AccountTypeQueryDTO query) {
@@ -106,12 +110,23 @@ public class AccountTypeServiceImpl
             if (accountType == null) {
                 throw new BizException(404, "账户类型不存在");
             }
+            // 编码决定账户是资产类还是信用类，两者余额含义相反；
+            // 改了编码，该类型下账户已有流水的余额正负号会全部失真
+            if (!Objects.equals(accountType.getTypeCode(), normalize(dto.getTypeCode()))) {
+                throw new BizException(400, "账户类型编码创建后不可修改");
+            }
+            // 账户名和账户图标由类型名、所属提供方派生，任一变化都要同步到该类型下的账户
+            boolean derivedChanged = !Objects.equals(accountType.getProviderId(), dto.getProviderId())
+                    || !Objects.equals(accountType.getTypeName(), normalize(dto.getTypeName()));
             accountType.setProviderId(dto.getProviderId());
             accountType.setTypeCode(normalize(dto.getTypeCode()));
             accountType.setTypeName(normalize(dto.getTypeName()));
             accountType.setSort(dto.getSort() == null ? DEFAULT_SORT : dto.getSort());
             validateProviderAndDuplicate(accountType, accountType.getId());
             updateById(accountType);
+            if (derivedChanged) {
+                accountService.refreshAccountsOfTypes(List.of(accountType.getId()));
+            }
             return String.valueOf(dto.getId());
         } finally {
             AccountDictionaryWriteLock.release(lock);

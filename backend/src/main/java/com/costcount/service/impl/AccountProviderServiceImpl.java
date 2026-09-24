@@ -10,6 +10,7 @@ import com.costcount.exception.BizException;
 import com.costcount.mapper.AccountProviderMapper;
 import com.costcount.mapper.AccountTypeMapper;
 import com.costcount.service.AccountProviderService;
+import com.costcount.service.AccountService;
 import com.costcount.vo.account.provider.AccountProviderVO;
 import com.github.yulichang.base.MPJBaseServiceImpl;
 import com.github.yulichang.wrapper.MPJLambdaWrapper;
@@ -29,6 +30,9 @@ public class AccountProviderServiceImpl
 
     @Resource
     private AccountTypeMapper accountTypeMapper;
+
+    @Resource
+    private AccountService accountService;
 
     @Override
     public List<AccountProviderVO> listAccountProviders(AccountProviderQueryDTO query) {
@@ -90,9 +94,21 @@ public class AccountProviderServiceImpl
                     .ne(AccountProvider::getId, id).exists()) {
                 throw new BizException(409, "账户提供方名称已存在");
             }
+            String icon = normalize(dto.getIcon());
+            // 账户名和账户图标由提供方名称、图标派生，任一变化都要同步到其下账户
+            boolean derivedChanged = !Objects.equals(provider.getProviderName(), providerName)
+                    || !Objects.equals(provider.getIcon(), icon);
             provider.setProviderName(providerName);
-            provider.setIcon(normalize(dto.getIcon()));
+            provider.setIcon(icon);
             updateById(provider);
+            if (derivedChanged) {
+                List<Long> typeIds = accountTypeMapper.selectList(new LambdaQueryWrapper<AccountType>()
+                                .eq(AccountType::getProviderId, id))
+                        .stream()
+                        .map(AccountType::getId)
+                        .toList();
+                accountService.refreshAccountsOfTypes(typeIds);
+            }
             return String.valueOf(id);
         } finally {
             AccountDictionaryWriteLock.release(lock);

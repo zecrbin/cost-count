@@ -31,7 +31,7 @@ public class TransactionController {
         return R.ok(transactionService.pageQueryTransactions(pageQuery));
     }
 
-    @Operation(summary = "新增交易流水")
+    @Operation(summary = "录入交易流水", description = "按发生时间自动判断：最新的流水直接追加，历史流水重放并重建余额快照")
     @PostMapping
     public R<String> save(@Valid @RequestBody TransactionSaveDTO transactionSaveDTO) {
         return R.ok(transactionService.saveTransaction(transactionSaveDTO));

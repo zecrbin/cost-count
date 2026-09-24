@@ -3,18 +3,18 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview" },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
-    "@mantine/charts": "^8.3.14",
-    "@mantine/core": "^8.3.14",
-    "@mantine/hooks": "^8.3.14",
-    "@mantine/notifications": "^8.3.14",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource/noto-serif-sc": "^5.3.0",
     "@vitejs/plugin-react": "latest",
-    "lucide-react": "latest",
+    "lucide-react": "^1.47.0",
     "react": "latest",
     "react-dom": "latest",
-    "recharts": "^3.7.0",
     "vite": "latest"
-  },
-  "devDependencies": {}
+  }
 }
