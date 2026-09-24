@@ -19,9 +19,31 @@
 同步账户当前余额、流水的 `balanceAfter` 和日余额快照。存储账户余额表示可用资金，信用账户余额表示待还金额，
 具体方向见 `backend/src/main/java/com/costcount/common/LedgerBalance.java`。
 
-尚未完成：流水导入（`/api/import-records`）、财务总览统计；前端仍是旧版页面，尚未对接新接口。
+前端（React 19 + Mantine 8）已对接以上全部接口：
 
-接口文档：启动后端后访问 `http://localhost:8081/swagger-ui.html`。
+| 页面 | 内容 |
+| --- | --- |
+| 总览 | 净资产、按月收支与结余、每日支出、支出构成、账户和最近流水；无账户时显示三步引导 |
+| 流水 | 按月、类型、账户、分类、关键词筛选，按天分组；点击流水可修改或删除 |
+| 账户 | 资产 / 负债分组、信用额度使用情况；详情抽屉含余额走势、账户流水、修正初始资金 |
+| 分类 | 收入 / 支出 / 转账两级分类管理，可一键导入常用分类 |
+| 机构与类型 | 机构及其账户类型管理，可一键添加常用银行和支付平台 |
+
+「记一笔」在任意页面可用，支持支出、收入、转账和余额调整，并携带 `requestId` 防止重复提交。支持浅色 / 深色模式和手机布局。
+
+尚未完成：流水导入（`/api/import-records`）。
+
+## 本地运行
+
+```bash
+# 1. 建库：执行 backend/database/schema.sql（MySQL 8，默认库名 info_cc）
+# 2. 后端：默认连接 127.0.0.1:3306，可用 MYSQL_HOST / MYSQL_USERNAME / MYSQL_PASSWORD 等环境变量覆盖
+cd backend && mvn spring-boot:run
+# 3. 前端：开发服务器把 /api 和 /icons 代理到 8081
+cd frontend && npm install && npm run dev
+```
+
+打开 `http://127.0.0.1:5173`。接口文档：`http://localhost:8081/swagger-ui.html`。
 
 ## 测试
 

@@ -1,7 +1,181 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
-:root{--bg:#f5f6f8;--line:#e8eaf0;--blue:#3154e5;--ink:#1e2028}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}.grow{flex:1}.topbar{background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border-color:var(--line)}.sidebar{background:#fff;border-color:var(--line)}.main{background:var(--bg);min-height:100vh}.content{max-width:1260px;margin:auto;padding:38px 34px 64px}.logo{height:62px;margin:0 4px 26px}.logo>div:first-child{width:36px;height:36px;border-radius:12px;background:var(--blue);color:#fff;font-weight:800}.logo>div:last-child p:last-child{letter-spacing:.1em}.menu-title{font-size:10px!important;color:#a3a6af!important;padding:0 12px 10px}.nav-link{height:44px;border:0;border-radius:12px;background:transparent;padding:0 12px;display:flex;align-items:center;gap:11px;color:#737783;font-size:13px;font-weight:500}.nav-link span{flex:1;text-align:left}.nav-link:hover{background:#f6f7f9}.nav-link.active{background:#eef1ff;color:var(--blue);font-weight:700}.quick-note{background:#fff8df!important;border:1px solid #faedbd}.user-row{border-top:1px solid var(--line);flex-wrap:nowrap}.top-search input{background:#f5f6f8;border:0}.page-head{margin-bottom:28px}.page-head h1{font-size:28px;letter-spacing:-.035em}.kicker{font-size:10px!important;letter-spacing:.14em;color:var(--blue)!important;font-weight:700!important;margin-bottom:7px}.page-in{animation:in .3s ease both}@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}.hero-grid{display:grid;grid-template-columns:1.25fr .8fr 1.15fr;gap:18px}.balance-card,.month-balance,.category-card,.section,.category-item,.account-item{background:#fff;border:1px solid var(--line);box-shadow:0 8px 28px rgba(32,37,52,.045)}.balance-card{background:#eef1ff;border-color:#dfe5ff}.balance-card h2{font-size:32px}.mini-stat{padding:14px;border-radius:14px;background:rgba(255,255,255,.7)}.month-balance{background:#20232d;color:#fff;border:0}.month-balance .mantine-Text-root{color:#adb1bb!important}.category-card h3,.section h3{font-size:16px}.donut-list{min-width:145px}.category-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.category-picker button{border:1px solid var(--line);background:#fff;border-radius:13px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#676b75}.category-picker button:hover,.category-picker button.selected{border-color:var(--blue);background:#f5f7ff;color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}.category-item,.account-item{transition:.2s}.category-item:hover,.account-item:hover{transform:translateY(-3px);box-shadow:0 14px 36px rgba(32,37,52,.08)}.add-account{min-height:260px;border:1.5px dashed #cfd2db;border-radius:20px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}.add-account:hover{border-color:var(--blue);background:#f8f9ff}.mantine-Table-th{font-size:11px!important;color:#8a8e98!important}.mantine-Table-td{font-size:12px}.mantine-Modal-content{border-radius:20px!important}
-.category-group,.import-source{background:#fff;border:1px solid var(--line);box-shadow:0 8px 28px rgba(32,37,52,.04)}.category-children{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.category-child{height:32px;border:1px solid #eceef3;background:#f8f9fb;border-radius:10px;padding:0 10px;display:flex;align-items:center;gap:7px;color:#555a66;font-size:12px}.category-child:hover{background:#f2f4f8;border-color:#d9dde8}.category-child>span:first-child{width:6px;height:6px;border-radius:50%}.import-source{min-height:230px;position:relative;overflow:hidden}.import-source:after{content:"";position:absolute;width:150px;height:150px;border-radius:50%;right:-55px;top:-65px;background:rgba(49,84,229,.045)}.import-source.excel:after{background:rgba(41,179,124,.055)}.import-warning{border:1px solid #f5dfae;background:#fff8e5;color:#8b661e}.import-preview{border-top:3px solid var(--blue)}.import-row-invalid{background:#fffaf4}.import-row-invalid:hover{background:#fff7ed!important}
-.worth-board{display:grid;grid-template-columns:1.35fr 1px 1fr 1fr;align-items:center;gap:28px;margin-bottom:34px;background:linear-gradient(125deg,#f0f3ff 0%,#fff 62%);border:1px solid #e0e5f7;box-shadow:0 12px 36px rgba(36,47,83,.06)}.worth-board h2{font-size:30px;margin-top:5px}.worth-divider{width:1px;height:58px;background:#dfe3ec}.account-section{margin-top:34px}.account-section .account-item,.account-section .add-account{min-height:286px}.account-item.liability{background:linear-gradient(150deg,#fff 55%,#fff7f7);border-color:#f0dede}.account-empty{min-height:180px;border:1px dashed #d9dce4;background:rgba(255,255,255,.55);color:#8a8e98}.ledger-toolbar,.ledger-day{background:#fff;border:1px solid var(--line);box-shadow:0 8px 28px rgba(32,37,52,.04)}.ledger-filters{display:grid;grid-template-columns:auto minmax(145px,.7fr) minmax(145px,.7fr) minmax(180px,1fr);gap:10px}.ledger-day{overflow:hidden}.ledger-day-head{padding:15px 20px;background:#fafbfc;border-bottom:1px solid #eef0f4}.ledger-row{min-height:76px;padding:13px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #f0f1f4;transition:background .15s}.ledger-row:last-child{border-bottom:0}.ledger-row:hover{background:#fbfcfe}.ledger-main{flex:1;min-width:0}.ledger-amount{min-width:115px;text-align:right}.transfer-tip{background:#f5f7ff;border:1px solid #e1e6fa;color:#56607c}
-@media(max-width:1100px){.hero-grid{grid-template-columns:1fr 1fr}.balance-card{grid-column:1/-1}.category-card{grid-column:1/-1}}
-@media(max-width:900px){.ledger-filters{grid-template-columns:1fr 1fr}.ledger-filters>.mantine-SegmentedControl-root{grid-column:1/-1}.worth-board{grid-template-columns:1fr 1fr}.worth-divider{display:none}}
-@media(max-width:760px){.top-search{display:none}.content{padding:25px 16px 45px}.page-head{align-items:flex-start!important;gap:18px}.page-head h1{font-size:23px}.page-head>.mantine-Button-root{width:100%}.hero-grid{grid-template-columns:1fr}.balance-card,.category-card{grid-column:auto}.donut-wrap{flex-direction:column}.donut-list{width:100%}.category-picker{grid-template-columns:repeat(3,1fr)}.worth-board,.ledger-filters{grid-template-columns:1fr}.ledger-filters>.mantine-SegmentedControl-root{grid-column:auto}.ledger-row{padding:13px 12px}.ledger-amount{min-width:auto}.ledger-day-head{align-items:flex-start!important}.ledger-day-head>.mantine-Group-root{gap:8px!important}}
+/* 设计变量：浅色为中性灰画布 + 白色卡片，深色为冷灰。金额颜色只用于收入/支出语义。 */
+:root {
+  --cc-bg: #f5f6f8;
+  --cc-surface: #ffffff;
+  --cc-surface-muted: #f8f9fb;
+  --cc-border: #e6e8ec;
+  --cc-hover: #f3f4f7;
+  --cc-ink: #16181d;
+  --cc-muted: #6b7280;
+  --cc-faint: #9ca3af;
+  --cc-income: #0c8f5f;
+  --cc-expense: #e03e3e;
+  --cc-accent-soft: #edf0ff;
+}
+
+[data-mantine-color-scheme='dark'] {
+  --cc-bg: #111317;
+  --cc-surface: #1a1c21;
+  --cc-surface-muted: #16181c;
+  --cc-border: #2a2d34;
+  --cc-hover: #22252b;
+  --cc-ink: #eceef2;
+  --cc-muted: #9aa1ad;
+  --cc-faint: #6b717d;
+  --cc-income: #3fcf8e;
+  --cc-expense: #ff6b6b;
+  --cc-accent-soft: rgba(92, 124, 250, 0.14);
+}
+
+body {
+  background: var(--cc-bg);
+  color: var(--cc-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.tone-income { color: var(--cc-income); }
+.tone-expense { color: var(--cc-expense); }
+.muted { color: var(--cc-muted); }
+
+.mantine-Card-root, .cc-panel {
+  background: var(--cc-surface);
+  border-color: var(--cc-border);
+}
+
+/* ---------- 外框 ---------- */
+.cc-navbar {
+  background: var(--cc-surface);
+  border-color: var(--cc-border);
+}
+.cc-header { background: var(--cc-surface); border-color: var(--cc-border); }
+.cc-main { background: var(--cc-bg); min-height: 100dvh; }
+.cc-content { max-width: 1200px; margin: 0 auto; padding: 32px 32px 72px; }
+
+.cc-brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 22px; }
+.cc-brand-mark {
+  width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--mantine-color-indigo-7); color: #fff; font-weight: 700; font-size: 17px;
+}
+
+.cc-nav-link {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  height: 40px; padding: 0 12px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--cc-muted); font: inherit; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.cc-nav-link:hover { background: var(--cc-hover); color: var(--cc-ink); }
+.cc-nav-link[data-active] { background: var(--cc-accent-soft); color: var(--mantine-color-indigo-7); font-weight: 600; }
+[data-mantine-color-scheme='dark'] .cc-nav-link[data-active] { color: var(--mantine-color-indigo-3); }
+
+.cc-page-header { margin-bottom: 24px; }
+.cc-page-title { font-size: 26px; letter-spacing: -0.02em; line-height: 1.2; }
+
+.cc-section-title { font-size: 15px; font-weight: 600; }
+
+/* ---------- 数字卡片 ---------- */
+.cc-stat-label { font-size: 13px; color: var(--cc-muted); }
+.cc-stat-value { font-size: 24px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.25; }
+.cc-hero-value { font-size: 36px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; }
+
+.cc-hero {
+  background: linear-gradient(135deg, var(--mantine-color-indigo-8), var(--mantine-color-indigo-6));
+  border: 0 !important; color: #fff;
+}
+.cc-hero .cc-stat-label, .cc-hero .muted { color: rgba(255, 255, 255, 0.72); }
+.cc-hero-split { border-top: 1px solid rgba(255, 255, 255, 0.18); padding-top: 14px; margin-top: 18px; }
+
+/* ---------- 流水列表 ---------- */
+.cc-day-header {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 10px 20px; background: var(--cc-surface-muted); border-bottom: 1px solid var(--cc-border);
+  font-size: 13px;
+}
+.cc-day + .cc-day .cc-day-header { border-top: 1px solid var(--cc-border); }
+.cc-row {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  padding: 12px 20px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left;
+  border-bottom: 1px solid var(--cc-border);
+}
+.cc-row:last-child { border-bottom: 0; }
+button.cc-row { cursor: pointer; transition: background 0.12s; }
+button.cc-row:hover { background: var(--cc-hover); }
+.cc-row-main { flex: 1; min-width: 0; }
+.cc-row-amount { text-align: right; flex-shrink: 0; }
+.cc-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- 账户卡片 ---------- */
+.cc-account-card {
+  display: block; width: 100%; text-align: left; cursor: pointer; font: inherit; color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.cc-account-card:hover {
+  border-color: var(--mantine-color-indigo-3);
+  box-shadow: 0 6px 20px rgba(20, 24, 40, 0.06);
+  transform: translateY(-1px);
+}
+.cc-account-card[data-disabled] { opacity: 0.6; }
+
+.cc-add-tile {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  min-height: 150px; width: 100%; border: 1.5px dashed var(--cc-border); border-radius: var(--mantine-radius-lg);
+  background: transparent; color: var(--cc-muted); font: inherit; font-size: 14px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.cc-add-tile:hover { border-color: var(--mantine-color-indigo-4); color: var(--mantine-color-indigo-6); background: var(--cc-accent-soft); }
+
+/* ---------- 分类 ---------- */
+.cc-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px;
+  border: 1px solid var(--cc-border); border-radius: 999px; background: var(--cc-surface-muted);
+  color: var(--cc-ink); font: inherit; font-size: 13px; cursor: pointer; transition: border-color 0.12s, background 0.12s;
+}
+.cc-chip:hover { border-color: var(--mantine-color-indigo-3); background: var(--cc-hover); }
+.cc-chip[data-dashed] { border-style: dashed; color: var(--cc-muted); background: transparent; }
+.cc-chip[data-selected] {
+  border-color: var(--mantine-color-indigo-6); background: var(--cc-accent-soft); color: var(--mantine-color-indigo-7); font-weight: 600;
+}
+[data-mantine-color-scheme='dark'] .cc-chip[data-selected] { color: var(--mantine-color-indigo-3); }
+
+.cc-icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
+.cc-icon-option {
+  aspect-ratio: 1; display: grid; place-items: center; border: 1px solid var(--cc-border); border-radius: 10px;
+  background: transparent; color: var(--cc-muted); cursor: pointer;
+}
+.cc-icon-option:hover { color: var(--cc-ink); background: var(--cc-hover); }
+.cc-icon-option[data-selected] { border-color: var(--mantine-color-indigo-6); color: var(--mantine-color-indigo-6); background: var(--cc-accent-soft); }
+
+/* ---------- 设置 ---------- */
+.cc-provider-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px;
+  border: 0; border-radius: 10px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.cc-provider-item:hover { background: var(--cc-hover); }
+.cc-provider-item[data-active] { background: var(--cc-accent-soft); }
+
+/* ---------- 记一笔 ---------- */
+.cc-amount-input input {
+  font-size: 30px; font-weight: 650; height: 60px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+}
+.cc-fab {
+  position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 150;
+  box-shadow: 0 10px 24px rgba(54, 79, 199, 0.35);
+}
+
+@media (max-width: 768px) {
+  .cc-content { padding: 20px 16px 96px; }
+  .cc-page-title { font-size: 22px; }
+  .cc-hero-value { font-size: 30px; }
+  .cc-row, .cc-day-header { padding-left: 14px; padding-right: 14px; }
+}
+
+.cc-option {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
+  border: 1px solid var(--cc-border); border-radius: 8px; background: var(--cc-surface);
+  color: var(--cc-ink); font: inherit; font-size: 13px; cursor: pointer; transition: border-color 0.12s, background 0.12s;
+}
+.cc-option:hover { border-color: var(--mantine-color-indigo-3); }
+.cc-option[data-selected] {
+  border-color: var(--mantine-color-indigo-6); background: var(--cc-accent-soft); color: var(--mantine-color-indigo-7); font-weight: 600;
+}
+[data-mantine-color-scheme='dark'] .cc-option[data-selected] { color: var(--mantine-color-indigo-3); }

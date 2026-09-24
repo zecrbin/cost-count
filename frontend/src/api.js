@@ -1,35 +1,58 @@
+// 后端接口封装。统一响应为 { code, message, data }，code 不为 200 时抛出带中文原因的错误。
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
-async function request(path, options = {}) {
+async function request(path, { method = 'GET', body } = {}) {
+  let response;
   try {
-    const isFormData = options.body instanceof FormData;
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: { ...(isFormData ? {} : { 'Content-Type': 'application/json' }), ...options.headers },
-      ...options,
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
     });
-    const result = await response.json().catch(() => null);
-    if (!response.ok || result?.code !== 200) {
-      throw new Error(result?.message || `请求失败：${response.status}`);
-    }
-    return result.data;
-  } catch (error) {
-    if (error instanceof TypeError) {
-      throw new Error('无法连接记账服务，请确认后端已经启动');
-    }
-    throw error;
+  } catch {
+    throw new Error('无法连接记账服务，请确认后端已启动');
   }
+  const result = await response.json().catch(() => null);
+  if (!response.ok || result?.code !== 200) {
+    throw new Error(result?.message || `请求失败（${response.status}）`);
+  }
+  return result.data;
 }
 
+const crud = (base) => ({
+  list: (query = {}) => request(`${base}/list`, { method: 'POST', body: query }),
+  get: (id) => request(`${base}/${id}`),
+  create: (data) => request(base, { method: 'POST', body: data }),
+  update: (data) => request(base, { method: 'PUT', body: data }),
+  remove: (ids) => request(base, { method: 'DELETE', body: ids }),
+});
+
 export const api = {
-  dashboard: () => request('/api/dashboard/summary'),
-  accounts: () => request('/api/accounts/list'),
-  saveAccount: (data, id) => request(id ? `/api/accounts/${id}` : '/api/accounts', { method: id ? 'PUT' : 'POST', body: JSON.stringify(data) }),
-  categories: () => request('/api/categories/list'),
-  saveCategory: (data, id) => request(id ? `/api/categories/${id}` : '/api/categories', { method: id ? 'PUT' : 'POST', body: JSON.stringify(data) }),
-  transactions: (query = {}) => request('/api/transactions/page', { method: 'POST', body: JSON.stringify({ pageNum: 1, pageSize: 100, params: query }) }),
-  createTransaction: (data) => request('/api/transactions', { method: 'POST', body: JSON.stringify(data) }),
-  deleteTransaction: (id) => request(`/api/transactions/${id}`, { method: 'DELETE' }),
-  previewExcel: (file) => { const body = new FormData(); body.append('file', file); return request('/api/bill-import/excel/preview', { method: 'POST', body }); },
-  recognizeImages: (files) => { const body = new FormData(); files.forEach(file => body.append('files', file)); return request('/api/bill-import/image/recognize', { method: 'POST', body }); },
-  confirmImport: (rows) => request('/api/bill-import/confirm', { method: 'POST', body: JSON.stringify(rows) }),
+  providers: crud('/api/account-providers'),
+  accountTypes: crud('/api/account-types'),
+  categories: crud('/api/categories'),
+  accounts: {
+    ...crud('/api/accounts'),
+    adjustInitialBalance: (id, data) => request(`/api/accounts/${id}/initial-balance`, { method: 'PUT', body: data }),
+  },
+  dailyBalances: (query) => request('/api/account-daily-balances/list', { method: 'POST', body: query }),
+  transactions: {
+    page: (params = {}, pageNum = 1, pageSize = 50) =>
+      request('/api/transactions/page', { method: 'POST', body: { pageNum, pageSize, params } }),
+    get: (id) => request(`/api/transactions/${id}`),
+    create: (data) => request('/api/transactions', { method: 'POST', body: data }),
+    update: (data) => request('/api/transactions', { method: 'PUT', body: data }),
+    remove: (id) => request(`/api/transactions/${id}`, { method: 'DELETE' }),
+  },
 };
+
+/** 读取某时间段内的全部流水（分批拉取，个人账本数据量可控）。 */
+export async function fetchAllTransactions(params, pageSize = 500) {
+  const records = [];
+  for (let pageNum = 1; ; pageNum += 1) {
+    const page = await api.transactions.page(params, pageNum, pageSize);
+    records.push(...page.records);
+    if (records.length >= page.total || page.records.length === 0) return records;
+  }
+}
