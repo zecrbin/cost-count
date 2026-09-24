@@ -1,6 +1,7 @@
 package com.costcount.dto.transaction;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -32,6 +33,8 @@ public class TransactionSaveDTO {
     private Long categoryId;
 
     @Schema(description = "业务金额，始终为正数", example = "99.99", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "业务金额不能为空")
+    @DecimalMin(value = "0.01", message = "业务金额必须大于0")
     private BigDecimal amount;
 
     @Schema(description = "余额调整值，可正可负，仅 ADJUSTMENT 时必填", example = "-20.00")

@@ -10,8 +10,6 @@ target/
 .classpath
 .project
 .settings/
-database/
-docs/
 
 # Runtime logs
 logs/

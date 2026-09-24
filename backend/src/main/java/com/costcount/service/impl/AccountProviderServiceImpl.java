@@ -51,7 +51,11 @@ public class AccountProviderServiceImpl
         MPJLambdaWrapper<AccountProvider> wrapper = new MPJLambdaWrapper<>();
         wrapper.select(AccountProvider::getId, AccountProvider::getProviderName, AccountProvider::getIcon)
                 .eq(AccountProvider::getId, id);
-        return selectJoinOne(AccountProviderVO.class, wrapper);
+        AccountProviderVO provider = selectJoinOne(AccountProviderVO.class, wrapper);
+        if (provider == null) {
+            throw new BizException(404, "账户提供方不存在");
+        }
+        return provider;
     }
 
     @Override
@@ -79,6 +83,9 @@ public class AccountProviderServiceImpl
     public String updateAccountProvider(AccountProviderSaveDTO dto) {
         validateSaveDTO(dto);
         Long id = dto.getId();
+        if (id == null) {
+            throw new BizException(400, "账户提供方ID不能为空");
+        }
         String providerName = normalize(dto.getProviderName());
         ReentrantLock lock = AccountDictionaryWriteLock.acquire();
         try {

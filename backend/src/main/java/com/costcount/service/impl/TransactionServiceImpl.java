@@ -5,17 +5,20 @@ import com.costcount.common.PageQuery;
 import com.costcount.dto.transaction.InitialTransactionSaveDTO;
 import com.costcount.dto.transaction.TransactionQueryDTO;
 import com.costcount.dto.transaction.TransactionSaveDTO;
-import com.costcount.entity.*;
-import com.costcount.mapper.*;
+import com.costcount.entity.Account;
+import com.costcount.entity.Transaction;
+import com.costcount.exception.BizException;
+import com.costcount.mapper.TransactionMapper;
 import com.costcount.service.TransactionService;
 import com.costcount.vo.transaction.TransactionVO;
 import com.github.yulichang.base.MPJBaseServiceImpl;
 import com.github.yulichang.wrapper.MPJLambdaWrapper;
-import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
-import java.util.*;
+import java.util.Optional;
 import static com.costcount.common.TransactionConstant.INITIAL;
 import static com.costcount.common.TransactionConstant.SOURCE_SYSTEM;
 
@@ -25,18 +28,20 @@ import static com.costcount.common.TransactionConstant.SOURCE_SYSTEM;
  * <p>流水是账户余额的事实来源；新增或修改流水后，通过顺序回放相关流水同步账户余额和日余额缓存。</p>
  */
 @Service
+@Validated
 public class TransactionServiceImpl
         extends MPJBaseServiceImpl<TransactionMapper, Transaction>
         implements TransactionService {
-
-    @Resource
-    private TransactionMapper transactionMapper;
 
     @Override
     public Page<TransactionVO> pageQueryTransactions(PageQuery<TransactionQueryDTO> pageQuery) {
 
         TransactionQueryDTO params = Optional.ofNullable(pageQuery.getParams()).orElseGet(TransactionQueryDTO::new);
+        return baseMapper.selectJoinPage(pageQuery.toPage(), TransactionVO.class, buildPageQueryWrapper(params));
+    }
 
+    /** 构造流水分页查询条件，关联主账户和转账目标账户名称。 */
+    MPJLambdaWrapper<Transaction> buildPageQueryWrapper(TransactionQueryDTO params) {
         MPJLambdaWrapper<Transaction> wrapper = new MPJLambdaWrapper<>();
         wrapper.select(
                 Transaction::getId,
@@ -57,25 +62,22 @@ public class TransactionServiceImpl
                 .selectAs("targetAccount", Account::getAccName, TransactionVO::getTargetAccountName)
                 .leftJoin(Account.class, "account", Account::getId, Transaction::getAccountId)
                 .leftJoin(Account.class, "targetAccount", Account::getId, Transaction::getTargetAccountId)
-                .and(w -> w
-                        .eq(params.getAccountId() != null, Transaction::getAccountId, params.getAccountId())
+                // 条件放在外层：内层条件全部不成立时 MyBatis-Plus 仍会拼出空括号，生成非法 SQL。
+                .and(params.getAccountId() != null, w -> w
+                        .eq(Transaction::getAccountId, params.getAccountId())
                         .or()
-                        .eq(params.getAccountId() != null, Transaction::getTargetAccountId, params.getAccountId()
-                ))
+                        .eq(Transaction::getTargetAccountId, params.getAccountId()))
                 .eq(StringUtils.isNotBlank(params.getTransactionType()), Transaction::getTransactionType,
                         params.getTransactionType())
                 .ge(params.getStartTime() != null, Transaction::getTransactionTime, params.getStartTime())
                 .le(params.getEndTime() != null, Transaction::getTransactionTime, params.getEndTime())
                 .orderByDesc(Transaction::getTransactionTime)
                 .orderByDesc(Transaction::getId);
-
-        Page<TransactionVO> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
-        page = transactionMapper.selectJoinPage(page, TransactionVO.class, wrapper);
-
-        return page;
+        return wrapper;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String saveInitialTransaction(InitialTransactionSaveDTO initialTransactionSaveDTO) {
 
         Transaction transaction = new Transaction();
@@ -97,9 +99,7 @@ public class TransactionServiceImpl
 
     @Override
     public String saveTransaction(TransactionSaveDTO transactionSaveDTO) {
-
-
-
-        return "";
+        // 尚未实现余额联动前明确拒绝，避免调用方误以为流水已入账。
+        throw new BizException(501, "新增交易流水功能暂未实现");
     }
 }

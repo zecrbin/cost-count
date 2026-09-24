@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static com.costcount.common.CommonConstant.CREDIT_ACCOUNT_TYPE;
 import static com.costcount.common.TransactionConstant.TRANSFER;
 
 /** 根据流水事实重建账户活动日余额缓存。 */
@@ -207,6 +208,6 @@ public class AccountDailyBalanceServiceImpl
         if (accountType == null) {
             throw new BizException(404, "账户类型不存在");
         }
-        return "CREDIT".equalsIgnoreCase(accountType.getTypeCode());
+        return CREDIT_ACCOUNT_TYPE.equalsIgnoreCase(accountType.getTypeCode());
     }
 }

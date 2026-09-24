@@ -18,7 +18,8 @@ public class AccountTypeSaveDTO {
     @NotNull(message = "账户提供方 ID 不能为空")
     private Long providerId;
 
-    @Schema(description = "账户类型编码", example = "DEBIT", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "账户类型编码，决定余额方向：DEBIT 存储账户、CREDIT 信用账户", example = "DEBIT",
+            allowableValues = {"DEBIT", "CREDIT"}, requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "账户类型编码不能为空")
     @Size(max = 64, message = "账户类型编码不能超过64个字符")
     private String typeCode;
