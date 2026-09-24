@@ -1,4 +1,4 @@
--- 测试用 H2 表结构，按实体字段推导；生产库结构以实际 MySQL 脚本为准。
+-- 测试用 H2 表结构，与 backend/database/schema.sql 的 MySQL 表结构保持一致（约束和可空性）。
 DROP TABLE IF EXISTS cc_account_daily_balance;
 DROP TABLE IF EXISTS cc_transaction;
 DROP TABLE IF EXISTS cc_category;
@@ -54,7 +54,7 @@ CREATE TABLE cc_account (
 
 CREATE TABLE cc_category (
     id            BIGINT PRIMARY KEY,
-    pid           BIGINT      NOT NULL DEFAULT 0,
+    pid           BIGINT               DEFAULT NULL,
     category_type VARCHAR(16) NOT NULL,
     category_name VARCHAR(64) NOT NULL,
     icon          VARCHAR(256),
@@ -85,7 +85,8 @@ CREATE TABLE cc_transaction (
     created_by        VARCHAR(64),
     updated_time      DATETIME,
     updated_by        VARCHAR(64),
-    remark            VARCHAR(256)
+    remark            VARCHAR(256),
+    CONSTRAINT uk_request_id UNIQUE (request_id)
 );
 
 CREATE TABLE cc_account_daily_balance (
@@ -96,7 +97,8 @@ CREATE TABLE cc_account_daily_balance (
     transaction_change DECIMAL(18, 2) NOT NULL,
     correction_change  DECIMAL(18, 2) NOT NULL DEFAULT 0,
     closing_balance    DECIMAL(18, 2) NOT NULL,
-    rebuilt_time       DATETIME
+    rebuilt_time       DATETIME,
+    CONSTRAINT uk_account_stat_date UNIQUE (account_id, stat_date)
 );
 
 CREATE TABLE cc_import_record (

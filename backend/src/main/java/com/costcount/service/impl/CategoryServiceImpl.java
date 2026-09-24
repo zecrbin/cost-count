@@ -56,10 +56,10 @@ public class CategoryServiceImpl
 
         Map<Long, CategoryVO> roots = new LinkedHashMap<>();
         categories.stream()
-                .filter(category -> ROOT_CATEGORY_PID.equals(category.getPid()))
+                .filter(category -> isRoot(category.getPid()))
                 .forEach(category -> roots.put(category.getId(), toVO(category)));
         categories.stream()
-                .filter(category -> !ROOT_CATEGORY_PID.equals(category.getPid()))
+                .filter(category -> !isRoot(category.getPid()))
                 .forEach(category -> {
                     CategoryVO parent = roots.get(category.getPid());
                     if (parent != null) {
@@ -165,15 +165,18 @@ public class CategoryServiceImpl
             if (parent == null) {
                 throw new BizException(404, "父分类不存在");
             }
-            if (!ROOT_CATEGORY_PID.equals(parent.getPid())) {
+            if (!isRoot(parent.getPid())) {
                 throw new BizException(400, "分类最多支持两级");
             }
             if (!parent.getCategoryType().equals(category.getCategoryType())) {
                 throw new BizException(400, "子分类类型必须与父分类一致");
             }
         }
+        boolean root = isRoot(category.getPid());
         if (lambdaQuery().eq(Category::getCategoryType, category.getCategoryType())
-                .eq(Category::getPid, category.getPid())
+                // 历史数据的一级分类可能以 NULL 作为父 ID，查重时一并视为根层级。
+                .and(root, w -> w.eq(Category::getPid, ROOT_CATEGORY_PID).or().isNull(Category::getPid))
+                .eq(!root, Category::getPid, category.getPid())
                 .eq(Category::getCategoryName, category.getCategoryName())
                 .ne(category.getId() != null, Category::getId, category.getId())
                 .exists()) {
@@ -210,6 +213,10 @@ public class CategoryServiceImpl
         CategoryVO vo = new CategoryVO();
         BeanUtils.copyProperties(category, vo);
         return vo;
+    }
+
+    private boolean isRoot(Long pid) {
+        return pid == null || ROOT_CATEGORY_PID.equals(pid);
     }
 
     private Long normalizePid(Long pid) {

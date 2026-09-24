@@ -170,7 +170,19 @@ class LedgerFlowIntegrationTest {
         assertEquals(first, retry);
         assertBalance(debit, "90.00");
 
-        TransactionVO detail = transactionService.getTransaction(Long.valueOf(first));
+        // 唯一索引覆盖已删除流水：删除后复用幂等号应明确拒绝，而不是触发唯一键冲突。
+        transactionService.deleteTransaction(Long.valueOf(first));
+        assertBizError(409, () -> saveTransaction(dto -> {
+            expense(dto, debit, "10.00", time(2, 9));
+            dto.setRequestId("client-1");
+        }));
+        assertBalance(debit, "100.00");
+
+        String second = saveTransaction(dto -> {
+            expense(dto, debit, "10.00", time(2, 9));
+            dto.setRequestId("client-2");
+        });
+        TransactionVO detail = transactionService.getTransaction(Long.valueOf(second));
         assertEquals("午餐", detail.getCategoryName());
         assertEquals("工资卡", detail.getAccountName());
         assertBizError(404, () -> transactionService.getTransaction(-1L));
@@ -247,6 +259,13 @@ class LedgerFlowIntegrationTest {
         Long debit = addAccount(debitTypeId, "工资卡", "100.00", time(1, 9));
         saveTransaction(dto -> expense(dto, debit, "10.00", time(2, 9)));
         assertBizError(409, () -> categoryService.deleteCategories(List.of(lunchCategoryId)));
+
+        // 历史数据中父 ID 为 NULL 的分类也视为一级分类。
+        jdbcTemplate.update("INSERT INTO cc_category (id, pid, category_type, category_name, sort) "
+                + "VALUES (1, NULL, 'EXPENSE', '交通', 9)");
+        assertEquals(List.of("餐饮", "交通"), categoryService.listCategoryTree(query("EXPENSE")).stream()
+                .map(CategoryVO::getCategoryName).toList());
+        assertBizError(409, () -> addCategory(null, "EXPENSE", "交通"));
     }
 
     @Test

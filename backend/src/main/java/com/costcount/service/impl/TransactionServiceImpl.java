@@ -219,9 +219,11 @@ public class TransactionServiceImpl
         try {
             String requestId = normalize(transactionSaveDTO.getRequestId());
             if (requestId != null) {
-                Transaction existing = lambdaQuery().eq(Transaction::getRequestId, requestId)
-                        .last("LIMIT 1").one();
+                Transaction existing = baseMapper.selectByRequestIdIncludingDeleted(requestId);
                 if (existing != null) {
+                    if (Integer.valueOf(1).equals(existing.getIsDeleted())) {
+                        throw new BizException(409, "该幂等号对应的流水已被删除，请使用新的幂等号");
+                    }
                     return String.valueOf(existing.getId());
                 }
             }
