@@ -12,6 +12,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Objects;
@@ -69,6 +71,17 @@ public class GlobalExceptionHandler {
     public R<Void> handleNoResourceFoundException(NoResourceFoundException exception) {
         log.warn("资源不存在：{}", exception.getResourcePath());
         return R.fail(404, "资源不存在");
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public R<Void> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException exception) {
+        log.warn("上传文件过大", exception);
+        return R.fail(400, "图片不能超过 2MB");
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public R<Void> handleMissingServletRequestPartException(MissingServletRequestPartException exception) {
+        return R.fail(400, "请选择要上传的图片");
     }
 
     @ExceptionHandler(Exception.class)

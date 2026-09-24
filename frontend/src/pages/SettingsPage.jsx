@@ -7,27 +7,28 @@ import { api } from '../api';
 import { AccountAvatar } from '../components/AccountAvatar';
 import { ConfirmModal } from '../components/ConfirmAction';
 import { EmptyState } from '../components/EmptyState';
+import { IconUpload } from '../components/IconUpload';
 import { PageHeader } from '../components/PageHeader';
 import { useData } from '../lib/data';
-import { ACCOUNT_KINDS } from '../lib/meta';
+import { ACCOUNT_KINDS, providerIconUrl } from '../lib/meta';
 import { notifyError, notifySuccess } from '../lib/notify';
 import { PRESET_PROVIDERS } from '../lib/presets';
 
 function ProviderModal({ opened, onClose, provider, onSaved }) {
   const { reload } = useData();
   const [name, setName] = useState('');
-  const [icon, setIcon] = useState('');
+  const [icon, setIcon] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (opened) { setName(provider?.providerName || ''); setIcon(provider?.icon || ''); }
+    if (opened) { setName(provider?.providerName || ''); setIcon(provider?.icon || null); }
   }, [opened, provider]);
 
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
     try {
-      const payload = { id: provider?.id, providerName: name.trim(), icon: icon.trim() || null };
+      const payload = { id: provider?.id, providerName: name.trim(), icon };
       const id = await (provider ? api.providers.update(payload) : api.providers.create(payload));
       notifySuccess(provider ? '机构已更新' : '机构已添加');
       await reload('providers', 'accountTypes', 'accounts');
@@ -45,9 +46,9 @@ function ProviderModal({ opened, onClose, provider, onSaved }) {
       <Stack gap="md">
         <TextInput label="机构名称" placeholder="如：招商银行、支付宝" maxLength={128} value={name} data-autofocus
           onChange={(event) => setName(event.currentTarget.value)} />
-        <TextInput label="图标路径" placeholder="可选，如 providers/cmb.png" maxLength={256} value={icon}
-          description="留空时按名称自动匹配内置图标（招行、中行、建行、农行、支付宝、微信、京东），也可填写图片 URL"
-          onChange={(event) => setIcon(event.currentTarget.value)} />
+        <IconUpload label="机构图标" value={icon} onChange={setIcon}
+          previewAccount={{ providerName: name.trim() || '?' }}
+          defaultHint={providerIconUrl({ providerName: name.trim() }) ? '未上传时使用内置图标' : '未上传时显示名称首字'} />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onClose}>取消</Button>
           <Button onClick={save} loading={saving} disabled={!name.trim()}>保存</Button>

@@ -29,8 +29,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,13 +48,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** 覆盖开户、记账、转账、补录、修改、删除和初始资金修正的余额联动。 */
-@SpringBootTest(properties = "app.storage.account-icon-dir=target/test-account-icons")
+@SpringBootTest(properties = {"app.storage.account-icon-dir=target/test-account-icons",
+        "app.storage.uploaded-icon-dir=target/test-uploaded-icons"})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class LedgerFlowIntegrationTest {
@@ -304,6 +310,45 @@ class LedgerFlowIntegrationTest {
                     .andExpect(content().contentType(MediaType.IMAGE_PNG));
         }
         mockMvc.perform(get("/icons/default/providers/not-exist.png")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void uploadedIconShouldBeResizedServedAndCleanedUpWithProvider() throws Exception {
+        BufferedImage image = new BufferedImage(600, 400, BufferedImage.TYPE_INT_ARGB);
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", png);
+
+        String first = uploadIcon(png.toByteArray());
+        assertTrue(first.matches("uploads/[0-9a-f]{32}\\.png"), first);
+        BufferedImage stored = ImageIO.read(Path.of("target/test-uploaded-icons", first.substring(8)).toFile());
+        assertEquals(256, stored.getWidth());
+        assertEquals(171, stored.getHeight());
+        mockMvc.perform(get("/icons/" + first)).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.IMAGE_PNG));
+
+        // 伪装成图片的文本文件按内容识别后拒绝。
+        mockMvc.perform(multipart("/api/icons").file(new MockMultipartFile("file", "fake.png", "image/png", "hello".getBytes())))
+                .andExpect(jsonPath("$.code").value(400));
+
+        AccountProviderSaveDTO provider = new AccountProviderSaveDTO();
+        provider.setProviderName("自定义银行");
+        provider.setIcon(first);
+        provider.setId(Long.valueOf(accountProviderService.addAccountProvider(provider)));
+
+        String second = uploadIcon(png.toByteArray());
+        provider.setIcon(second);
+        accountProviderService.updateAccountProvider(provider);
+        assertTrue(Files.notExists(Path.of("target/test-uploaded-icons", first.substring(8))), "换图后旧图标应被删除");
+
+        accountProviderService.deleteAccountProviders(List.of(provider.getId()));
+        assertTrue(Files.notExists(Path.of("target/test-uploaded-icons", second.substring(8))), "删除机构后图标应被删除");
+    }
+
+    private String uploadIcon(byte[] bytes) throws Exception {
+        String body = mockMvc.perform(multipart("/api/icons").file(new MockMultipartFile("file", "icon.png", "image/png", bytes)))
+                .andExpect(jsonPath("$.code").value(200))
+                .andReturn().getResponse().getContentAsString();
+        return body.replaceAll(".*\"data\":\"([^\"]+)\".*", "$1");
     }
 
     // ---------- helpers ----------

@@ -68,8 +68,8 @@ export function colorFromText(text = '') {
 export function iconUrl(path) {
   if (!path) return null;
   if (/^(https?:)?\/\//.test(path) || path.startsWith('/') || path.startsWith('data:')) return path;
-  // 系统生成的银行卡图标由后端映射在 /icons/accounts，其余为内置静态图标。
-  if (path.startsWith('accounts/')) return `/icons/${path}`;
+  // 系统生成的银行卡图标和用户上传的图标由后端映射在 /icons 下，其余为内置静态图标。
+  if (path.startsWith('accounts/') || path.startsWith('uploads/')) return `/icons/${path}`;
   return `/icons/default/${path.split('/').map(encodeURIComponent).join('/')}`;
 }
 

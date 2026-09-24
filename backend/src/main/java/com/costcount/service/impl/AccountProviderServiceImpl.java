@@ -10,6 +10,7 @@ import com.costcount.exception.BizException;
 import com.costcount.mapper.AccountProviderMapper;
 import com.costcount.mapper.AccountTypeMapper;
 import com.costcount.service.AccountProviderService;
+import com.costcount.service.UploadedIconService;
 import com.costcount.vo.account.provider.AccountProviderVO;
 import com.github.yulichang.base.MPJBaseServiceImpl;
 import com.github.yulichang.wrapper.MPJLambdaWrapper;
@@ -29,6 +30,9 @@ public class AccountProviderServiceImpl
 
     @Resource
     private AccountTypeMapper accountTypeMapper;
+
+    @Resource
+    private UploadedIconService uploadedIconService;
 
     @Override
     public List<AccountProviderVO> listAccountProviders(AccountProviderQueryDTO query) {
@@ -97,9 +101,11 @@ public class AccountProviderServiceImpl
                     .ne(AccountProvider::getId, id).exists()) {
                 throw new BizException(409, "账户提供方名称已存在");
             }
+            String previousIcon = provider.getIcon();
             provider.setProviderName(providerName);
             provider.setIcon(normalize(dto.getIcon()));
             updateById(provider);
+            uploadedIconService.deleteReplacedIconAfterCommit(previousIcon, provider.getIcon());
             return String.valueOf(id);
         } finally {
             AccountDictionaryWriteLock.release(lock);
@@ -121,7 +127,9 @@ public class AccountProviderServiceImpl
             if (accountTypeMapper.selectCount(wrapper) > 0) {
                 throw new BizException(409, "账户提供方已关联账户类型，无法删除");
             }
+            List<AccountProvider> providers = listByIds(ids);
             removeByIds(ids);
+            providers.forEach(provider -> uploadedIconService.deleteReplacedIconAfterCommit(provider.getIcon(), null));
         } finally {
             AccountDictionaryWriteLock.release(lock);
         }

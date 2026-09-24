@@ -6,12 +6,13 @@ import { api } from '../api';
 import { useData } from '../lib/data';
 import { fromInputDateTime, toInputDateTime } from '../lib/format';
 import { ACCOUNT_KINDS } from '../lib/meta';
+import { IconUpload } from './IconUpload';
 import { notifyError, notifySuccess } from '../lib/notify';
 
 function emptyForm() {
   return {
     typeId: null, accName: '', accTailNum: '', initialBalance: '', initialTime: toInputDateTime(new Date()),
-    creditLimit: '', idealCreditLimit: '', sort: 0, enabled: true, remark: '',
+    creditLimit: '', idealCreditLimit: '', sort: 0, enabled: true, remark: '', icon: null,
   };
 }
 
@@ -20,6 +21,8 @@ function formFromAccount(account) {
     typeId: account.typeId, accName: account.accName || '', accTailNum: account.accTailNum || '',
     initialBalance: '', initialTime: '', creditLimit: account.creditLimit ?? '', idealCreditLimit: account.idealCreditLimit ?? '',
     sort: account.sort ?? 0, enabled: account.status !== 0, remark: account.remark || '',
+    // 系统生成的银行卡图标不算自定义图标，编辑时仍按尾号自动生成。
+    icon: account.icon && !account.icon.startsWith('accounts/') ? account.icon : null,
   };
 }
 
@@ -74,7 +77,7 @@ export function AccountModal({ opened, onClose, account, onSaved }) {
       accTailNum: form.accTailNum || null,
       creditLimit: credit && form.creditLimit !== '' ? Number(form.creditLimit) : null,
       idealCreditLimit: credit && form.idealCreditLimit !== '' ? Number(form.idealCreditLimit) : null,
-      icon: account?.icon && !account.icon.startsWith('accounts/') ? account.icon : null,
+      icon: form.icon,
       sort: Number(form.sort) || 0,
       status: form.enabled ? 1 : 0,
       remark: form.remark.trim() || null,
@@ -137,6 +140,13 @@ export function AccountModal({ opened, onClose, account, onSaved }) {
               onChange={(event) => set({ enabled: event.currentTarget.checked })} />
           )}
         </SimpleGrid>
+        <IconUpload label="账户图标" value={form.icon} onChange={(icon) => set({ icon })}
+          previewAccount={{
+            accName: form.accName, providerName: selectedType?.providerName, typeName: selectedType?.typeName,
+            providerIcon: providers.find((provider) => provider.id === selectedType?.providerId)?.icon,
+            icon: editing && !form.icon && form.accTailNum && account?.icon?.startsWith('accounts/') ? account.icon : null,
+          }}
+          defaultHint={form.accTailNum ? '未上传时按尾号自动生成卡面' : '未上传时使用机构或内置图标'} />
         <TextInput label="备注" placeholder="可选" maxLength={256} value={form.remark}
           onChange={(event) => set({ remark: event.currentTarget.value })} />
         <Group justify="flex-end" gap="sm" mt={4}>

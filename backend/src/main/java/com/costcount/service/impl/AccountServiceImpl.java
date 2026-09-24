@@ -2,6 +2,7 @@ package com.costcount.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.costcount.common.AccountDictionaryWriteLock;
+import com.costcount.common.AfterCommit;
 import com.costcount.dto.account.AccountInitialBalanceAdjustDTO;
 import com.costcount.dto.account.AccountQueryDTO;
 import com.costcount.dto.account.AccountSaveDTO;
@@ -17,15 +18,13 @@ import com.costcount.mapper.AccountTypeMapper;
 import com.costcount.service.AccountIconStorageService;
 import com.costcount.service.AccountService;
 import com.costcount.service.TransactionService;
+import com.costcount.service.UploadedIconService;
 import com.costcount.vo.account.AccountVO;
 import com.github.yulichang.base.MPJBaseServiceImpl;
 import com.github.yulichang.wrapper.MPJLambdaWrapper;
 import jakarta.annotation.Resource;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -44,7 +43,6 @@ import static com.costcount.common.CommonConstant.STATUS_ENABLED;
 import static com.costcount.common.TransactionConstant.INITIAL;
 
 /** 账户聚合服务，负责账户资料、初始流水及动态图标的协同维护。 */
-@Slf4j
 @Service
 public class AccountServiceImpl
         extends MPJBaseServiceImpl<AccountMapper, Account>
@@ -61,6 +59,9 @@ public class AccountServiceImpl
 
     @Resource
     private AccountIconStorageService accountIconStorageService;
+
+    @Resource
+    private UploadedIconService uploadedIconService;
 
     @Override
     public List<AccountVO> listAccounts(AccountQueryDTO query) {
@@ -140,7 +141,7 @@ public class AccountServiceImpl
             account.setIcon(resolveIcon(account, normalize(dto.getIcon()), accountType));
             updateById(account);
             if (!Objects.equals(previousIcon, account.getIcon())) {
-                deleteGeneratedIconAfterCommit(previousIcon);
+                deleteOwnedIconAfterCommit(previousIcon);
             }
             return String.valueOf(account.getId());
         } finally {
@@ -169,7 +170,7 @@ public class AccountServiceImpl
             }
             accounts.forEach(account -> transactionService.deleteAccountLedger(account.getId()));
             removeByIds(ids);
-            accounts.forEach(account -> deleteGeneratedIconAfterCommit(account.getIcon()));
+            accounts.forEach(account -> deleteOwnedIconAfterCommit(account.getIcon()));
         } finally {
             AccountDictionaryWriteLock.release(lock);
         }
@@ -246,25 +247,13 @@ public class AccountServiceImpl
         return accountIconStorageService.storeBankCardIcon(account.getId(), providerName, account.getAccTailNum());
     }
 
-    /** 事务提交后再删除旧的生成图标，避免回滚后账户引用的图标文件已被删除。 */
-    private void deleteGeneratedIconAfterCommit(String iconPath) {
-        if (!accountIconStorageService.isGeneratedIcon(iconPath)) {
-            return;
+    /** 事务提交后再删除账户不再使用的生成图标或上传图标，避免回滚后引用的文件已被删除。 */
+    private void deleteOwnedIconAfterCommit(String iconPath) {
+        if (accountIconStorageService.isGeneratedIcon(iconPath)) {
+            AfterCommit.run("删除账户图标 " + iconPath, () -> accountIconStorageService.deleteBankCardIcon(iconPath));
+        } else {
+            uploadedIconService.deleteReplacedIconAfterCommit(iconPath, null);
         }
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            accountIconStorageService.deleteBankCardIcon(iconPath);
-            return;
-        }
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                try {
-                    accountIconStorageService.deleteBankCardIcon(iconPath);
-                } catch (RuntimeException exception) {
-                    log.warn("删除账户图标失败：{}", iconPath, exception);
-                }
-            }
-        });
     }
 
     private AccountType requireAccountType(Long typeId) {
