@@ -1,5 +1,5 @@
 import { ActionIcon, Button, Card, Group, Menu, SegmentedControl, SimpleGrid, Text } from '@mantine/core';
-import { MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from '../lib/icons';
 import { useState } from 'react';
 import { api } from '../api';
 import { CategoryIcon } from '../components/CategoryIcon';

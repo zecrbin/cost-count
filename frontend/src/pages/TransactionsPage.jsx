@@ -1,5 +1,5 @@
 import { Button, Card, Center, Group, Loader, SegmentedControl, Select, SimpleGrid, Text, TextInput } from '@mantine/core';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search } from '../lib/icons';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchAllTransactions } from '../api';
 import { AccountSelect } from '../components/AccountSelect';

@@ -56,7 +56,7 @@ export function categoryEmoji(category) {
 }
 
 /** 分类和账户没有颜色字段，按名称稳定地映射到一组协调的颜色。 */
-export const PALETTE = ['#8b5cf6', '#ff6b9a', '#1fb88a', '#ffb020', '#4da3ff', '#ff8a5b', '#b267e6', '#1fb5c9', '#f25c7a', '#7cc95b'];
+export const PALETTE = ['#8b5cf6', '#4da3ff', '#1fb88a', '#ffb020', '#ff8a5b', '#1fb5c9', '#6c7cf5', '#7cc95b', '#b267e6', '#e0679b'];
 
 export function colorFromText(text = '') {
   let hash = 0;

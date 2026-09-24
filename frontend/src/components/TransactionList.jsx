@@ -1,5 +1,5 @@
 import { Badge, Group, Text } from '@mantine/core';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight } from '../lib/icons';
 import { useMemo } from 'react';
 import { useData } from '../lib/data';
 import { dateKey, formatDayHeader, formatTime } from '../lib/format';

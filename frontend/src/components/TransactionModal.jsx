@@ -1,7 +1,7 @@
 import {
   ActionIcon, Button, Group, Modal, NumberInput, SegmentedControl, SimpleGrid, Stack, Text, TextInput,
 } from '@mantine/core';
-import { ArrowDownUp, Trash2 } from 'lucide-react';
+import { ArrowDownUp, Trash2 } from '../lib/icons';
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useData } from '../lib/data';
@@ -206,7 +206,7 @@ export function TransactionModal({ opened, onClose, transaction, defaults }) {
             )}
             <Group gap="sm">
               <Button variant="default" onClick={onClose}>取消</Button>
-              <Button type="submit" loading={saving} variant="gradient" gradient={{ from: 'berry.6', to: '#ff8fb8', deg: 135 }}>
+              <Button type="submit" loading={saving} variant="gradient" gradient={{ from: 'berry.6', to: '#4f8ef7', deg: 135 }}>
                 {editing ? '保存修改' : '记好了'}
               </Button>
             </Group>

@@ -39,11 +39,13 @@
 # 1. 建库：执行 backend/database/schema.sql（MySQL 8，默认库名 info_cc）
 # 2. 后端：默认连接 127.0.0.1:3306，可用 MYSQL_HOST / MYSQL_USERNAME / MYSQL_PASSWORD 等环境变量覆盖
 cd backend && mvn spring-boot:run
-# 3. 前端：开发服务器把 /api 和 /icons 代理到 8081
-cd frontend && npm install && npm run dev
+# 3. 前端（二选一，都会把 /api 和 /icons 代理到 8081）
+cd frontend && npm install
+npm run start   # 日常使用：打包后预览，加载约 460KB，打开 http://127.0.0.1:4173
+npm run dev     # 改代码调试：热更新，未压缩的依赖约 13MB，打开 http://127.0.0.1:5173
 ```
 
-打开 `http://127.0.0.1:5173`。接口文档：`http://localhost:8081/swagger-ui.html`。
+接口文档：`http://localhost:8081/swagger-ui.html`。
 
 ## 测试
 

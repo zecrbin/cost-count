@@ -1,5 +1,5 @@
 import { Badge, Button, Card, Group, Progress, SimpleGrid, Switch, Text } from '@mantine/core';
-import { Plus } from 'lucide-react';
+import { Plus } from '../lib/icons';
 import { useMemo, useState } from 'react';
 import { AccountAvatar } from '../components/AccountAvatar';
 import { AccountDrawer } from '../components/AccountDrawer';
@@ -36,7 +36,7 @@ function AccountCard({ account, onOpen }) {
       <Money value={account.balance} fz={24} display="block" />
       {usage != null && (
         <>
-          <Progress value={Math.min(usage, 100)} size={8} mt="sm" color={usage > 80 ? 'pink' : 'berry'} striped={usage > 80} />
+          <Progress value={Math.min(usage, 100)} size={8} mt="sm" color={usage > 80 ? 'orange' : 'berry'} striped={usage > 80} />
           <Text size="xs" c="dimmed" fw={600} mt={6}>额度 {formatMoney(limit)} · 还能刷 {formatMoney(limit - toNumber(account.balance))}</Text>
         </>
       )}

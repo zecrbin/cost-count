@@ -1,8 +1,8 @@
-import { AreaChart } from '@mantine/charts';
+import { AreaChart } from './Charts';
 import {
   Badge, Button, Center, Drawer, Group, Loader, Menu, Progress, SimpleGrid, Stack, Text,
 } from '@mantine/core';
-import { MoreHorizontal, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Plus, RotateCcw, Trash2 } from '../lib/icons';
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useData } from '../lib/data';
@@ -82,7 +82,7 @@ export function AccountDrawer({ accountId, onClose, onEdit, onAdjust }) {
             <Money value={account.balance} className="cc-hero-value" display="block" mt={4} />
             {usage != null && (
               <>
-                <Progress value={Math.min(usage, 100)} mt="sm" size={10} color={usage > 80 ? 'pink' : 'berry'} striped={usage > 80} />
+                <Progress value={Math.min(usage, 100)} mt="sm" size={10} color={usage > 80 ? 'orange' : 'berry'} striped={usage > 80} />
                 <Text size="xs" c="dimmed" fw={600} mt={6}>已用 {Math.round(usage)}% · 还能刷 {formatMoney(limit - toNumber(account.balance))}</Text>
               </>
             )}
@@ -129,7 +129,7 @@ export function AccountDrawer({ accountId, onClose, onEdit, onAdjust }) {
             ) : chartData.length < 2 ? (
               <Text size="sm" c="dimmed" fw={600}>再多记几天，就能看到走势啦 🌱</Text>
             ) : (
-              <AreaChart h={180} data={chartData} dataKey="date" series={[{ name: '余额', color: credit ? 'pink.5' : 'berry.5' }]}
+              <AreaChart h={180} data={chartData} dataKey="date" series={[{ name: '余额', color: credit ? 'orange.5' : 'berry.5' }]}
                 curveType="monotone" withDots={false} gridAxis="y" tickLine="none" fillOpacity={0.25} strokeDasharray="4 6"
                 valueFormatter={(value) => formatMoney(value)} yAxisProps={{ tickFormatter: formatCompactMoney, width: 48 }}
                 xAxisProps={{ minTickGap: 24 }} />

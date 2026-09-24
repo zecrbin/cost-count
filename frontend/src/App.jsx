@@ -3,7 +3,7 @@ import {
   useMantineColorScheme,
 } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
-import { Moon, Plus, Sun } from 'lucide-react';
+import { Moon, Plus, Sun } from './lib/icons';
 import { useEffect, useState } from 'react';
 import { EmptyState } from './components/EmptyState';
 import { Mascot } from './components/Mascot';
@@ -81,7 +81,7 @@ export function App() {
             </div>
           </div>
           <Button size="md" leftSection={<Plus size={18} />} mb="lg" onClick={() => openTransaction()} disabled={Boolean(error)}
-            variant="gradient" gradient={{ from: 'berry.6', to: '#ff8fb8', deg: 135 }}>
+            variant="gradient" gradient={{ from: 'berry.6', to: '#4f8ef7', deg: 135 }}>
             记一笔
           </Button>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

@@ -1,26 +1,26 @@
-/* 设计变量：奶油暖底 + 糖果色点缀；深色为"夜间糖果"紫调。收入薄荷绿，支出珊瑚粉仅用于汇总强调。 */
+/* 设计变量：浅色冷白底 + 紫/蓝/薄荷点缀；深色为紫调夜色。收入薄荷绿，支出珊瑚橙仅用于汇总强调。 */
 :root {
-  --cc-bg: #fff7f0;
-  --cc-blob-1: rgba(255, 179, 204, 0.45);
-  --cc-blob-2: rgba(196, 176, 255, 0.45);
-  --cc-blob-3: rgba(167, 236, 208, 0.40);
+  --cc-bg: #f6f7fb;
+  --cc-blob-1: rgba(196, 181, 253, 0.38);
+  --cc-blob-2: rgba(147, 197, 253, 0.34);
+  --cc-blob-3: rgba(167, 236, 208, 0.32);
   --cc-surface: #ffffff;
-  --cc-surface-muted: #fbf6ff;
-  --cc-border: #f1e7f6;
-  --cc-hover: #f8f1ff;
-  --cc-ink: #2d2840;
-  --cc-muted: #8b84a3;
-  --cc-income: #1fb88a;
-  --cc-expense: #ff6b8b;
+  --cc-surface-muted: #f6f7fc;
+  --cc-border: #eaecf4;
+  --cc-hover: #f3f3fb;
+  --cc-ink: #2b2a3d;
+  --cc-muted: #83839c;
+  --cc-income: #16a97c;
+  --cc-expense: #f0674f;
   --cc-accent: #8b5cf6;
   --cc-accent-soft: #f1eaff;
-  --cc-shadow: 0 10px 30px rgba(139, 92, 246, 0.08), 0 2px 6px rgba(45, 40, 64, 0.04);
-  --cc-shadow-hover: 0 16px 40px rgba(139, 92, 246, 0.16), 0 4px 10px rgba(45, 40, 64, 0.06);
+  --cc-shadow: 0 8px 26px rgba(76, 81, 191, 0.07), 0 2px 6px rgba(43, 42, 61, 0.04);
+  --cc-shadow-hover: 0 14px 36px rgba(76, 81, 191, 0.14), 0 4px 10px rgba(43, 42, 61, 0.06);
 }
 
 [data-mantine-color-scheme='dark'] {
   --cc-bg: #131124;
-  --cc-blob-1: rgba(255, 107, 155, 0.12);
+  --cc-blob-1: rgba(77, 163, 255, 0.10);
   --cc-blob-2: rgba(139, 92, 246, 0.18);
   --cc-blob-3: rgba(31, 184, 138, 0.10);
   --cc-surface: #221e3b;
@@ -30,7 +30,7 @@
   --cc-ink: #f1eeff;
   --cc-muted: #a49dc6;
   --cc-income: #4ee0ae;
-  --cc-expense: #ff8aa5;
+  --cc-expense: #ff8f78;
   --cc-accent: #ab8bfb;
   --cc-accent-soft: rgba(139, 92, 246, 0.2);
   --cc-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
@@ -117,8 +117,8 @@ body {
 
 .cc-hero {
   position: relative; overflow: hidden; color: #fff; border: 0 !important;
-  background: linear-gradient(135deg, #8b5cf6 0%, #b06cf0 45%, #ff8fb8 100%) !important;
-  box-shadow: 0 18px 40px rgba(139, 92, 246, 0.35) !important;
+  background: linear-gradient(135deg, #7c5cf6 0%, #6d6af5 50%, #4f8ef7 100%) !important;
+  box-shadow: 0 18px 40px rgba(95, 106, 245, 0.32) !important;
 }
 .cc-hero::before, .cc-hero::after {
   content: ''; position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.14); pointer-events: none;
@@ -232,8 +232,8 @@ button.cc-row:hover .cc-emoji-bubble { transform: scale(1.08) rotate(-6deg); }
 }
 .cc-fab {
   position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 150;
-  background: linear-gradient(135deg, #8b5cf6, #ff8fb8) !important;
-  box-shadow: 0 12px 28px rgba(139, 92, 246, 0.4);
+  background: linear-gradient(135deg, #7c5cf6, #4f8ef7) !important;
+  box-shadow: 0 12px 28px rgba(95, 106, 245, 0.4);
 }
 
 @media (max-width: 768px) {

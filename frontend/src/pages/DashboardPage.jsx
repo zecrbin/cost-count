@@ -1,6 +1,6 @@
-import { BarChart, DonutChart } from '@mantine/charts';
+import { BarChart, DonutChart } from '../components/Charts';
 import { Button, Card, Center, Grid, Group, Loader, Progress, SimpleGrid, Stack, Text } from '@mantine/core';
-import { ArrowRight, Plus } from 'lucide-react';
+import { ArrowRight, Plus } from '../lib/icons';
 import { useEffect, useMemo, useState } from 'react';
 import { api, fetchAllTransactions } from '../api';
 import { AccountAvatar } from '../components/AccountAvatar';
@@ -193,7 +193,7 @@ export function DashboardPage() {
         <Grid.Col span={{ base: 12, md: 7 }}>
           <SimpleGrid cols={2} spacing="md" h="100%">
             <StatCard label="收入" value={stats.income} tone="income" emoji="💰" color="#1fb88a" />
-            <StatCard label="支出" value={stats.expense} tone="expense" emoji="💸" color="#ff6b9a" />
+            <StatCard label="支出" value={stats.expense} tone="expense" emoji="💸" color="#f0674f" />
             <StatCard label="结余" value={stats.balance} tone="auto" sign emoji="🐷" color="#8b5cf6"
               footnote={stats.income > 0 ? `结余率 ${Math.round((stats.balance / stats.income) * 100)}%` : '暂时还没有收入'} />
             <StatCard label="日均支出" value={stats.dailyAverage} emoji="📅" color="#ffb020"
@@ -257,7 +257,7 @@ export function DashboardPage() {
                   <div className="cc-row-main">
                     <Text size="sm" fw={700} className="cc-truncate">{account.accName}</Text>
                     {usage != null ? (
-                      <Progress value={Math.min(usage, 100)} size={6} mt={6} color={usage > 80 ? 'pink' : 'berry'} />
+                      <Progress value={Math.min(usage, 100)} size={6} mt={6} color={usage > 80 ? 'orange' : 'berry'} />
                     ) : (
                       <Text size="xs" c="dimmed" fw={500} className="cc-truncate">{account.providerName} · {account.typeName}</Text>
                     )}

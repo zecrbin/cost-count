@@ -1,5 +1,5 @@
 import { ActionIcon, Button, Group, Text } from '@mantine/core';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from '../lib/icons';
 import { currentMonth, formatMonth, isSameMonth, shiftMonth } from '../lib/format';
 
 export function MonthSwitcher({ value, onChange }) {

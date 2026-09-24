@@ -44,30 +44,30 @@ export function Mascot({ size = 96, mood = 'calm', coin = false, className = '',
         </g>
       )}
       {/* 尾巴 */}
-      <path d="M101 62 q10 -4 7 -12 q-3 -6 -8 -1 q-4 5 3 7" fill="none" stroke="#ff8fb2" strokeWidth="3.2" strokeLinecap="round" />
+      <path d="M101 62 q10 -4 7 -12 q-3 -6 -8 -1 q-4 5 3 7" fill="none" stroke="#f2a5ba" strokeWidth="3.2" strokeLinecap="round" />
       {/* 耳朵 */}
-      <path d="M30 38 L27 17 Q27 13 31 15 L48 28 Z" fill="#ff8fb2" />
-      <path d="M90 38 L93 17 Q93 13 89 15 L72 28 Z" fill="#ff8fb2" />
+      <path d="M30 38 L27 17 Q27 13 31 15 L48 28 Z" fill="#f2a5ba" />
+      <path d="M90 38 L93 17 Q93 13 89 15 L72 28 Z" fill="#f2a5ba" />
       {/* 腿 */}
-      <rect x="33" y="84" width="14" height="16" rx="6" fill="#ff8fb2" />
-      <rect x="73" y="84" width="14" height="16" rx="6" fill="#ff8fb2" />
+      <rect x="33" y="84" width="14" height="16" rx="6" fill="#f2a5ba" />
+      <rect x="73" y="84" width="14" height="16" rx="6" fill="#f2a5ba" />
       {/* 身体 */}
-      <ellipse cx="60" cy="60" rx="44" ry="36" fill="#ffb3cc" />
+      <ellipse cx="60" cy="60" rx="44" ry="36" fill="#f9c4d2" />
       <ellipse cx="46" cy="40" rx="16" ry="8" fill="#ffffff" opacity="0.35" transform="rotate(-18 46 40)" />
       {/* 投币口 */}
-      <rect x="49" y="27" width="22" height="5.5" rx="2.75" fill="#e2789c" />
+      <rect x="49" y="27" width="22" height="5.5" rx="2.75" fill="#d98aa2" />
       {eyes}
       {/* 腮红 */}
-      <ellipse cx="33" cy="63" rx="7" ry="4" fill="#ff7fa8" opacity="0.45" />
-      <ellipse cx="87" cy="63" rx="7" ry="4" fill="#ff7fa8" opacity="0.45" />
+      <ellipse cx="33" cy="63" rx="7" ry="4" fill="#f59ab4" opacity="0.4" />
+      <ellipse cx="87" cy="63" rx="7" ry="4" fill="#f59ab4" opacity="0.4" />
       {/* 鼻子 */}
-      <ellipse cx="60" cy="65" rx="14" ry="10.5" fill="#ff8fb2" />
-      <ellipse cx="55" cy="65" rx="2.6" ry="3.4" fill="#c4527a" />
-      <ellipse cx="65" cy="65" rx="2.6" ry="3.4" fill="#c4527a" />
+      <ellipse cx="60" cy="65" rx="14" ry="10.5" fill="#f2a5ba" />
+      <ellipse cx="55" cy="65" rx="2.6" ry="3.4" fill="#b86a85" />
+      <ellipse cx="65" cy="65" rx="2.6" ry="3.4" fill="#b86a85" />
       {/* 嘴 */}
       {mood === 'sad'
-        ? <path d="M54 83 Q60 78 66 83" fill="none" stroke="#c4527a" strokeWidth="2.4" strokeLinecap="round" />
-        : <path d="M54 79 Q60 84 66 79" fill="none" stroke="#c4527a" strokeWidth="2.4" strokeLinecap="round" />}
+        ? <path d="M54 83 Q60 78 66 83" fill="none" stroke="#b86a85" strokeWidth="2.4" strokeLinecap="round" />
+        : <path d="M54 79 Q60 84 66 79" fill="none" stroke="#b86a85" strokeWidth="2.4" strokeLinecap="round" />}
     </svg>
   );
 }

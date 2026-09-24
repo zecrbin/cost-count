@@ -1,7 +1,7 @@
 import {
   ActionIcon, Badge, Button, Card, Checkbox, Grid, Group, Modal, NumberInput, SegmentedControl, Stack, Text, TextInput, Tooltip,
 } from '@mantine/core';
-import { Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Sparkles, Trash2 } from '../lib/icons';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import { AccountAvatar } from '../components/AccountAvatar';
