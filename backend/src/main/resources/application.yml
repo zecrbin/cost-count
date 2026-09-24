@@ -70,7 +70,7 @@ app:
     # 用户上传的机构、账户图标目录，可通过环境变量覆盖。
     uploaded-icon-dir: ${UPLOADED_ICON_DIR:data/uploaded-icons}
     uploaded-icon-cleanup:
-      # 每天 03:30 清理未被机构或账户使用的上传图标；设为 "-" 可关闭。
-      cron: ${UPLOADED_ICON_CLEANUP_CRON:0 30 3 * * *}
+      # 每次启动完成后清理未被机构或账户使用的上传图标。
+      enabled: ${UPLOADED_ICON_CLEANUP_ENABLED:true}
       # 上传后至少保留的时长，避免删掉弹窗里刚上传、还没保存的图片。
       retention: 24h
