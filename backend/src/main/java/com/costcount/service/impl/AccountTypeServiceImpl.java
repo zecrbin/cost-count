@@ -11,7 +11,6 @@ import com.costcount.exception.BizException;
 import com.costcount.mapper.AccountMapper;
 import com.costcount.mapper.AccountProviderMapper;
 import com.costcount.mapper.AccountTypeMapper;
-import com.costcount.service.AccountService;
 import com.costcount.service.AccountTypeService;
 import com.costcount.vo.account.type.AccountTypeVO;
 import com.github.yulichang.base.MPJBaseServiceImpl;
@@ -22,9 +21,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.costcount.common.CommonConstant.CREDIT_ACCOUNT_TYPE;
+import static com.costcount.common.CommonConstant.DEBIT_ACCOUNT_TYPE;
 import static com.costcount.common.CommonConstant.DEFAULT_SORT;
 
 @Service
@@ -32,14 +35,14 @@ public class AccountTypeServiceImpl
         extends MPJBaseServiceImpl<AccountTypeMapper, AccountType>
         implements AccountTypeService {
 
+    /** 账户类型编码决定余额方向，只允许存储账户和信用账户两种。 */
+    private static final Set<String> TYPE_CODES = Set.of(DEBIT_ACCOUNT_TYPE, CREDIT_ACCOUNT_TYPE);
+
     @Resource
     private AccountProviderMapper accountProviderMapper;
 
     @Resource
     private AccountMapper accountMapper;
-
-    @Resource
-    private AccountService accountService;
 
     @Override
     public List<AccountTypeVO> listAccountTypes(AccountTypeQueryDTO query) {
@@ -79,7 +82,11 @@ public class AccountTypeServiceImpl
                 .leftJoin(AccountProvider.class, AccountProvider::getId, AccountType::getProviderId)
                 .eq(AccountType::getId, id);
 
-        return selectJoinOne(AccountTypeVO.class, wrapper);
+        AccountTypeVO accountType = selectJoinOne(AccountTypeVO.class, wrapper);
+        if (accountType == null) {
+            throw new BizException(404, "账户类型不存在");
+        }
+        return accountType;
     }
 
     @Override
@@ -110,23 +117,17 @@ public class AccountTypeServiceImpl
             if (accountType == null) {
                 throw new BizException(404, "账户类型不存在");
             }
-            // 编码决定账户是资产类还是信用类，两者余额含义相反；
-            // 改了编码，该类型下账户已有流水的余额正负号会全部失真
-            if (!Objects.equals(accountType.getTypeCode(), normalize(dto.getTypeCode()))) {
-                throw new BizException(400, "账户类型编码创建后不可修改");
+            String typeCode = normalizeTypeCode(dto.getTypeCode());
+            // 编码决定账户余额方向，被账户使用后修改会让历史余额语义整体反转。
+            if (!typeCode.equals(accountType.getTypeCode()) && isUsedByAccount(List.of(accountType.getId()))) {
+                throw new BizException(409, "账户类型已被账户使用，不能修改类型编码");
             }
-            // 账户名和账户图标由类型名、所属提供方派生，任一变化都要同步到该类型下的账户
-            boolean derivedChanged = !Objects.equals(accountType.getProviderId(), dto.getProviderId())
-                    || !Objects.equals(accountType.getTypeName(), normalize(dto.getTypeName()));
             accountType.setProviderId(dto.getProviderId());
-            accountType.setTypeCode(normalize(dto.getTypeCode()));
+            accountType.setTypeCode(typeCode);
             accountType.setTypeName(normalize(dto.getTypeName()));
             accountType.setSort(dto.getSort() == null ? DEFAULT_SORT : dto.getSort());
             validateProviderAndDuplicate(accountType, accountType.getId());
             updateById(accountType);
-            if (derivedChanged) {
-                accountService.refreshAccountsOfTypes(List.of(accountType.getId()));
-            }
             return String.valueOf(dto.getId());
         } finally {
             AccountDictionaryWriteLock.release(lock);
@@ -143,9 +144,7 @@ public class AccountTypeServiceImpl
         ReentrantLock lock = AccountDictionaryWriteLock.acquire();
         try {
             List<Long> ids = accountTypeIds.stream().distinct().toList();
-            LambdaQueryWrapper<Account> wrapper = new LambdaQueryWrapper<Account>()
-                    .in(Account::getTypeId, ids);
-            if (accountMapper.selectCount(wrapper) > 0) {
+            if (isUsedByAccount(ids)) {
                 throw new BizException(409, "账户类型已被账户使用，无法删除");
             }
             removeByIds(ids);
@@ -157,20 +156,21 @@ public class AccountTypeServiceImpl
     private AccountType buildAccountType(AccountTypeSaveDTO dto) {
         AccountType accountType = new AccountType();
         accountType.setProviderId(dto.getProviderId());
-        accountType.setTypeCode(normalize(dto.getTypeCode()));
+        accountType.setTypeCode(normalizeTypeCode(dto.getTypeCode()));
         accountType.setTypeName(normalize(dto.getTypeName()));
         accountType.setSort(dto.getSort() == null ? DEFAULT_SORT : dto.getSort());
         return accountType;
     }
 
+    private boolean isUsedByAccount(List<Long> accountTypeIds) {
+        LambdaQueryWrapper<Account> wrapper = new LambdaQueryWrapper<Account>()
+                .in(Account::getTypeId, accountTypeIds);
+        return accountMapper.selectCount(wrapper) > 0;
+    }
+
     private void validateProviderAndDuplicate(AccountType accountType, Long excludeId) {
         if (accountProviderMapper.selectById(accountType.getProviderId()) == null) {
             throw new BizException(404, "账户提供方不存在");
-        }
-        if (lambdaQuery().eq(AccountType::getProviderId, accountType.getProviderId())
-                .eq(AccountType::getTypeCode, accountType.getTypeCode())
-                .ne(excludeId != null, AccountType::getId, excludeId).exists()) {
-            throw new BizException(409, "该账户提供方下已存在相同编码的账户类型");
         }
         if (lambdaQuery().eq(AccountType::getProviderId, accountType.getProviderId())
                 .eq(AccountType::getTypeName, accountType.getTypeName())
@@ -189,8 +189,8 @@ public class AccountTypeServiceImpl
         if (!StringUtils.hasText(dto.getTypeCode())) {
             throw new BizException(400, "账户类型编码不能为空");
         }
-        if (dto.getTypeCode().trim().length() > 64) {
-            throw new BizException(400, "账户类型编码不能超过64个字符");
+        if (!TYPE_CODES.contains(normalizeTypeCode(dto.getTypeCode()))) {
+            throw new BizException(400, "账户类型编码只能是 DEBIT 或 CREDIT");
         }
         if (!StringUtils.hasText(dto.getTypeName())) {
             throw new BizException(400, "账户类型名称不能为空");
@@ -201,6 +201,10 @@ public class AccountTypeServiceImpl
         if (dto.getSort() != null && dto.getSort() < 0) {
             throw new BizException(400, "排序值不能小于0");
         }
+    }
+
+    private String normalizeTypeCode(String typeCode) {
+        return typeCode.trim().toUpperCase(Locale.ROOT);
     }
 
     private String normalize(String value) {

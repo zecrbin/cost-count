@@ -18,13 +18,6 @@ public interface CommonConstant {
     /** 账户类型：信用账户。 */
     String CREDIT_ACCOUNT_TYPE = "CREDIT";
 
-    /**
-     * 判断账户类型编码是否为信用类。
-     *
-     * <p>type_code 由用户录入且入库时不统一大小写，各处必须共用这一个判定，
-     * 否则同一个账户在不同链路上会被算成不同性质，转入方向的正负号会对不上。</p>
-     */
-    static boolean isCreditType(String typeCode) {
-        return CREDIT_ACCOUNT_TYPE.equalsIgnoreCase(typeCode);
-    }
+    /** 根分类的父分类 ID。 */
+    Long ROOT_CATEGORY_PID = 0L;
 }

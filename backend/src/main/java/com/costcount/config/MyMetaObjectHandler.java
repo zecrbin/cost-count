@@ -18,7 +18,8 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
 
     @Override
     public void updateFill(MetaObject metaObject) {
-        strictUpdateFill(metaObject, "updatedTime", LocalDateTime.class, LocalDateTime.now());
-        strictUpdateFill(metaObject, "updatedBy", String.class, "system");
+        // strictUpdateFill 不覆盖已有值；服务层普遍先查询再更新实体，必须强制刷新更新时间。
+        setFieldValByName("updatedTime", LocalDateTime.now(), metaObject);
+        setFieldValByName("updatedBy", "system", metaObject);
     }
 }

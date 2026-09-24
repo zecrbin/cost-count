@@ -1,162 +1,123 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CircleAlert, Library, Plus, ReceiptText, RefreshCw, WalletCards } from 'lucide-react';
-import { useStore } from './lib/store';
-import { todayParts } from './lib/format';
-import { ConfirmDialog, Loading, Toasts } from './components/ui';
+import {
+  ActionIcon, AppShell, Burger, Button, Center, Group, Loader, Text, Tooltip, useComputedColorScheme,
+  useMantineColorScheme,
+} from '@mantine/core';
+import { useDisclosure, useMediaQuery } from '@mantine/hooks';
+import { Moon, Plus, Sun } from './lib/icons';
+import { useEffect, useState } from 'react';
+import { EmptyState } from './components/EmptyState';
+import { Mascot } from './components/Mascot';
+import { useData } from './lib/data';
+import { useTransactionEditor } from './lib/editor';
+import { currentPageId, navigate } from './lib/navigation';
 import { AccountsPage } from './pages/AccountsPage';
-import { TransactionsPage } from './pages/TransactionsPage';
+import { CategoriesPage } from './pages/CategoriesPage';
+import { DashboardPage } from './pages/DashboardPage';
 import { SettingsPage } from './pages/SettingsPage';
-import { TransactionForm } from './forms/TransactionForm';
-import { AccountForm } from './forms/AccountForm';
-import { BalanceForm } from './forms/BalanceForm';
-import { ProviderForm, TypeForm } from './forms/DictionaryForms';
+import { TransactionsPage } from './pages/TransactionsPage';
 
 const PAGES = [
-  { key: 'accounts', label: '资金总览', icon: WalletCards },
-  { key: 'ledger', label: '流水账', icon: ReceiptText },
-  { key: 'settings', label: '账户字典', icon: Library },
+  { id: 'dashboard', label: '总览', emoji: '🏡', component: DashboardPage },
+  { id: 'transactions', label: '流水', emoji: '🧾', component: TransactionsPage },
+  { id: 'accounts', label: '账户', emoji: '👛', component: AccountsPage },
+  { id: 'categories', label: '分类', emoji: '🏷️', component: CategoriesPage },
+  { id: 'settings', label: '机构与类型', emoji: '🏦', component: SettingsPage },
 ];
 
-function readHash() {
-  const key = window.location.hash.replace(/^#\/?/, '');
-  return PAGES.some((p) => p.key === key) ? key : 'accounts';
+function ColorSchemeToggle() {
+  const { setColorScheme } = useMantineColorScheme();
+  const scheme = useComputedColorScheme('light');
+  return (
+    <Tooltip label={scheme === 'dark' ? '切到白天' : '切到夜晚'}>
+      <ActionIcon variant="light" size={38} aria-label="切换配色"
+        onClick={() => setColorScheme(scheme === 'dark' ? 'light' : 'dark')}>
+        {scheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      </ActionIcon>
+    </Tooltip>
+  );
 }
 
 export function App() {
-  const { accounts, ready, offline, loadAll, toast } = useStore();
-  const [page, setPage] = useState(readHash);
-  // 从账户卡片跳到流水时带上的账户筛选；换 key 让流水页按新的初始条件重新挂载
-  const [ledgerAccount, setLedgerAccount] = useState('');
-  const [ledgerKey, setLedgerKey] = useState(0);
-  const [modal, setModal] = useState(null);
-  const today = todayParts();
+  const [pageId, setPageId] = useState(currentPageId);
+  const [navOpened, nav] = useDisclosure(false);
+  const isMobile = useMediaQuery('(max-width: 48em)');
+  const { loading, error, loadAll } = useData();
+  const { openTransaction } = useTransactionEditor();
 
+  const closeNav = nav.close;
   useEffect(() => {
-    const onHash = () => setPage(readHash());
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
-  }, []);
+    const onHashChange = () => { setPageId(currentPageId()); closeNav(); window.scrollTo(0, 0); };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [closeNav]);
 
-  const go = useCallback((key) => {
-    window.location.hash = `/${key}`;
-    setPage(key);
-  }, []);
-
-  const openLedger = useCallback(
-    (accountId) => {
-      setLedgerAccount(accountId);
-      setLedgerKey((k) => k + 1);
-      go('ledger');
-    },
-    [go],
-  );
-
-  const close = useCallback(() => setModal(null), []);
-
-  const ui = useMemo(
-    () => ({
-      recordTransaction: (presetAccountId) => {
-        if (!accounts.some((a) => a.status !== 0)) {
-          toast('先新建一个账户再记账', 'error');
-          setModal({ kind: 'account', account: null });
-          return;
-        }
-        setModal({ kind: 'tx', presetAccountId });
-      },
-      editAccount: (account) => setModal({ kind: 'account', account }),
-      fixBalance: (account) => setModal({ kind: 'balance', account }),
-      editProvider: (provider) => setModal({ kind: 'provider', provider }),
-      editType: (type, presetProviderId) => setModal({ kind: 'type', type, presetProviderId }),
-      confirm: (options) => setModal({ kind: 'confirm', ...options }),
-    }),
-    [accounts, toast],
-  );
+  const page = PAGES.find((item) => item.id === pageId);
+  const PageComponent = page.component;
 
   return (
-    <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="seal" aria-hidden="true">
-            账
-          </div>
-          <div>
-            <div className="brand-name">Cost Count</div>
-            <div className="brand-sub">个人账簿</div>
-          </div>
-        </div>
+    <AppShell
+      header={{ height: 60, collapsed: !isMobile }}
+      navbar={{ width: 256, breakpoint: 'sm', collapsed: { mobile: !navOpened } }}
+      padding={0}
+    >
+      <AppShell.Header className="cc-header">
+        <Group h="100%" px="md" justify="space-between">
+          <Group gap="xs">
+            <Burger opened={navOpened} onClick={nav.toggle} size="sm" aria-label="打开导航" />
+            <Mascot size={34} mood="happy" />
+            <Text className="cc-brand-name">Cost Count</Text>
+          </Group>
+          <ColorSchemeToggle />
+        </Group>
+      </AppShell.Header>
 
-        <nav className="nav" aria-label="主导航">
-          <div className="nav-label">账簿</div>
-          {PAGES.map(({ key, label, icon: Icon }) => (
-            <button
-              type="button"
-              key={key}
-              className={`nav-item${page === key ? ' active' : ''}`}
-              aria-current={page === key ? 'page' : undefined}
-              onClick={() => {
-                if (key === 'ledger') {
-                  setLedgerAccount('');
-                  setLedgerKey((k) => k + 1);
-                }
-                go(key);
-              }}
-            >
-              <Icon size={18} />
-              <span className="label">{label}</span>
-              {key === 'accounts' && ready && <span className="nav-hint">{accounts.length}</span>}
-            </button>
-          ))}
-        </nav>
-
-        <div className="sidebar-foot">
-          <button type="button" className="btn btn-primary btn-record" onClick={() => ui.recordTransaction()}>
-            <Plus size={18} />
+      <AppShell.Navbar className="cc-navbar" p={isMobile ? 'sm' : 'md'} pr={isMobile ? 'sm' : 0}>
+        <div className="cc-nav-panel">
+          <div className="cc-brand">
+            <Mascot size={46} mood="happy" />
+            <div>
+              <div className="cc-brand-name">Cost Count</div>
+              <Text size="xs" c="dimmed" fw={600}>小猪记账本</Text>
+            </div>
+          </div>
+          <Button size="md" leftSection={<Plus size={18} />} mb="lg" onClick={() => openTransaction()} disabled={Boolean(error)}
+            variant="gradient" gradient={{ from: 'berry.6', to: '#4f8ef7', deg: 135 }}>
             记一笔
-          </button>
-          <div className="today">
-            <strong>{today.day}</strong>
-            {today.line}
+          </Button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {PAGES.map(({ id, label, emoji }) => (
+              <button key={id} type="button" className="cc-nav-link" data-active={id === pageId || undefined}
+                onClick={() => navigate(id)}>
+                <span className="cc-nav-emoji">{emoji}</span>
+                <span>{label}</span>
+              </button>
+            ))}
           </div>
+          <Group mt="auto" justify="space-between" pt="md" visibleFrom="sm">
+            <Text size="xs" c="dimmed" fw={600}>每一分钱都有去处 🌱</Text>
+            <ColorSchemeToggle />
+          </Group>
         </div>
-      </aside>
+      </AppShell.Navbar>
 
-      <main className="main">
-        {offline && (
-          <div className="banner page">
-            <CircleAlert size={18} />
-            <span style={{ flex: 1 }}>{offline}</span>
-            <button type="button" className="btn" onClick={loadAll}>
-              <RefreshCw size={15} />
-              重试
-            </button>
-          </div>
-        )}
-        {!ready ? (
-          <Loading />
-        ) : page === 'accounts' ? (
-          <AccountsPage ui={ui} onOpenLedger={openLedger} />
-        ) : page === 'ledger' ? (
-          <TransactionsPage key={ledgerKey} initialAccountId={ledgerAccount} ui={ui} />
-        ) : (
-          <SettingsPage ui={ui} />
-        )}
-      </main>
+      <AppShell.Main className="cc-main">
+        <div className="cc-content">
+          {loading ? (
+            <Center h="60vh"><Loader type="dots" size="lg" /></Center>
+          ) : error ? (
+            <EmptyState mood="sad" title="连不上记账服务" description={`${error.message}。确认后端已在 8081 端口启动后再试一次吧。`}
+              action={<Button onClick={loadAll}>重新连接</Button>} py={120} />
+          ) : (
+            <div className="cc-page" key={pageId}><PageComponent /></div>
+          )}
+        </div>
+      </AppShell.Main>
 
-      <button type="button" className="btn btn-primary fab" onClick={() => ui.recordTransaction()}>
-        <Plus size={18} />
-        记一笔
-      </button>
-
-      {modal?.kind === 'tx' && <TransactionForm presetAccountId={modal.presetAccountId} onClose={close} />}
-      {modal?.kind === 'account' && <AccountForm account={modal.account} onClose={close} />}
-      {modal?.kind === 'balance' && <BalanceForm account={modal.account} onClose={close} />}
-      {modal?.kind === 'provider' && <ProviderForm provider={modal.provider} onClose={close} />}
-      {modal?.kind === 'type' && <TypeForm type={modal.type} presetProviderId={modal.presetProviderId} onClose={close} />}
-      {modal?.kind === 'confirm' && (
-        <ConfirmDialog title={modal.title} message={modal.message} onConfirm={modal.onConfirm} onClose={close} />
+      {isMobile && !error && (
+        <ActionIcon className="cc-fab" size={60} radius="xl" onClick={() => openTransaction()} aria-label="记一笔">
+          <Plus size={28} />
+        </ActionIcon>
       )}
-
-      <Toasts />
-    </div>
+    </AppShell>
   );
 }

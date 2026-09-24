@@ -1,211 +1,298 @@
-import { useMemo, useState } from 'react';
-import { Info, Pencil, Plus, Trash2 } from 'lucide-react';
-import { ProviderAvatar } from '../components/AccountAvatar';
-import { Empty } from '../components/ui';
-import { useStore } from '../lib/store';
-import { api } from '../lib/api';
-import { isCredit } from '../lib/format';
+import {
+  ActionIcon, Badge, Button, Card, Checkbox, Grid, Group, Modal, NumberInput, SegmentedControl, Stack, Text, TextInput, Tooltip,
+} from '@mantine/core';
+import { Pencil, Plus, Sparkles, Trash2 } from '../lib/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { api } from '../api';
+import { AccountAvatar } from '../components/AccountAvatar';
+import { ConfirmModal } from '../components/ConfirmAction';
+import { EmptyState } from '../components/EmptyState';
+import { IconUpload } from '../components/IconUpload';
+import { PageHeader } from '../components/PageHeader';
+import { useData } from '../lib/data';
+import { ACCOUNT_KINDS, providerIconUrl } from '../lib/meta';
+import { notifyError, notifySuccess } from '../lib/notify';
+import { PRESET_PROVIDERS } from '../lib/presets';
 
-function NatureTag({ code }) {
-  const credit = isCredit(code);
+function ProviderModal({ opened, onClose, provider, onSaved }) {
+  const { reload } = useData();
+  const [name, setName] = useState('');
+  const [icon, setIcon] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (opened) { setName(provider?.providerName || ''); setIcon(provider?.icon || null); }
+  }, [opened, provider]);
+
+  const save = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      const payload = { id: provider?.id, providerName: name.trim(), icon };
+      const id = await (provider ? api.providers.update(payload) : api.providers.create(payload));
+      notifySuccess(provider ? '机构已更新' : '机构已添加');
+      await reload('providers', 'accountTypes', 'accounts');
+      onSaved?.(id);
+      onClose();
+    } catch (error) {
+      notifyError(error, '保存失败');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <span className={`tag ${credit ? 'tone-seal' : 'tone-jade'}`}>
-      {credit ? '信用' : '资产'}
-      <span style={{ opacity: 0.6 }}>{code}</span>
-    </span>
+    <Modal opened={opened} onClose={onClose} title={<Text fw={650} size="lg">{provider ? '编辑机构' : '添加机构'}</Text>}>
+      <Stack gap="md">
+        <TextInput label="机构名称" placeholder="如：招商银行、支付宝" maxLength={128} value={name} data-autofocus
+          onChange={(event) => setName(event.currentTarget.value)} />
+        <IconUpload label="机构图标" value={icon} onChange={setIcon}
+          previewAccount={{ providerName: name.trim() || '?' }}
+          defaultHint={providerIconUrl({ providerName: name.trim() }) ? '未上传时使用内置图标' : '未上传时显示名称首字'} />
+        <Group justify="flex-end" gap="sm">
+          <Button variant="default" onClick={onClose}>取消</Button>
+          <Button onClick={save} loading={saving} disabled={!name.trim()}>保存</Button>
+        </Group>
+      </Stack>
+    </Modal>
   );
 }
 
-function ProvidersTab({ ui }) {
-  const { providers, types, refreshDictionaries, toast } = useStore();
-  const typeCount = useMemo(() => {
-    const map = new Map();
-    for (const t of types) map.set(t.providerId, (map.get(t.providerId) ?? 0) + 1);
-    return map;
-  }, [types]);
+function TypeModal({ opened, onClose, provider, accountType }) {
+  const { reload, accounts } = useData();
+  const [form, setForm] = useState({ typeName: '', typeCode: 'DEBIT', sort: 0 });
+  const [saving, setSaving] = useState(false);
+  const inUse = accountType && accounts.some((account) => account.typeId === accountType.id);
 
-  function remove(provider) {
-    ui.confirm({
-      title: '删除提供方',
-      message: `删除「${provider.providerName}」？提供方下还有账户类型时无法删除。`,
-      onConfirm: async () => {
-        await api.deleteProviders([provider.id]);
-        await refreshDictionaries();
-        toast('提供方已删除');
-      },
-    });
-  }
+  useEffect(() => {
+    if (opened) setForm({ typeName: accountType?.typeName || '', typeCode: accountType?.typeCode || 'DEBIT', sort: accountType?.sort ?? 0 });
+  }, [opened, accountType]);
+
+  const save = async () => {
+    if (!form.typeName.trim()) return;
+    setSaving(true);
+    try {
+      const payload = { id: accountType?.id, providerId: provider.id, typeName: form.typeName.trim(), typeCode: form.typeCode, sort: Number(form.sort) || 0 };
+      await (accountType ? api.accountTypes.update(payload) : api.accountTypes.create(payload));
+      notifySuccess(accountType ? '账户类型已更新' : '账户类型已添加');
+      await reload('accountTypes', 'accounts');
+      onClose();
+    } catch (error) {
+      notifyError(error, '保存失败');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <div className="provider-grid">
-      {providers.map((provider, i) => (
-        <div className="sheet provider-tile reveal" style={{ '--i': i }} key={provider.id}>
-          <ProviderAvatar provider={provider} />
-          <div className="grow">
-            <div className="name">{provider.providerName}</div>
-            <div className="meta">{typeCount.get(provider.id) ?? 0} 个账户类型</div>
-          </div>
-          <div className="row-actions">
-            <button type="button" className="icon-btn" onClick={() => ui.editProvider(provider)} aria-label="编辑提供方">
-              <Pencil size={15} />
-            </button>
-            <button type="button" className="icon-btn danger" onClick={() => remove(provider)} aria-label="删除提供方">
-              <Trash2 size={15} />
-            </button>
-          </div>
+    <Modal opened={opened} onClose={onClose}
+      title={<Text fw={650} size="lg">{accountType ? '编辑账户类型' : `为「${provider?.providerName}」添加账户类型`}</Text>}>
+      <Stack gap="md">
+        <TextInput label="类型名称" placeholder="如：储蓄卡、信用卡、余额宝" maxLength={128} value={form.typeName} data-autofocus
+          onChange={(event) => setForm({ ...form, typeName: event.currentTarget.value })} />
+        <div>
+          <Text size="sm" fw={500} mb={6}>账户性质</Text>
+          <SegmentedControl fullWidth value={form.typeCode} disabled={inUse} onChange={(typeCode) => setForm({ ...form, typeCode })}
+            data={Object.entries(ACCOUNT_KINDS).map(([value, kind]) => ({ value, label: kind.label }))} />
+          <Text size="xs" c="dimmed" mt={6}>
+            {inUse ? '已有账户使用该类型，性质不能再修改。' : `${ACCOUNT_KINDS[form.typeCode].hint}。消费会让${form.typeCode === 'CREDIT' ? '待还金额增加' : '余额减少'}。`}
+          </Text>
         </div>
-      ))}
-      <button
-        type="button"
-        className="add-tile reveal"
-        style={{ minHeight: 78, '--i': providers.length }}
-        onClick={() => ui.editProvider(null)}
-      >
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <Plus size={17} />
-          添加提供方
-        </span>
-      </button>
-    </div>
+        <NumberInput label="排序" min={0} allowDecimal={false} value={form.sort} onChange={(sort) => setForm({ ...form, sort })} />
+        <Group justify="flex-end" gap="sm">
+          <Button variant="default" onClick={onClose}>取消</Button>
+          <Button onClick={save} loading={saving} disabled={!form.typeName.trim()}>保存</Button>
+        </Group>
+      </Stack>
+    </Modal>
   );
 }
 
-function TypesTab({ ui }) {
-  const { providers, types, refreshDictionaries, toast } = useStore();
-  const grouped = useMemo(
-    () => providers.map((provider) => ({ provider, list: types.filter((t) => t.providerId === provider.id) })),
-    [providers, types],
-  );
+function PresetModal({ opened, onClose }) {
+  const { providers, accountTypes, reload } = useData();
+  const [selected, setSelected] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const existingNames = new Set(providers.map((provider) => provider.providerName));
 
-  function remove(type) {
-    ui.confirm({
-      title: '删除账户类型',
-      message: `删除「${type.providerName} · ${type.typeName}」？已有账户使用的类型无法删除。`,
-      onConfirm: async () => {
-        await api.deleteTypes([type.id]);
-        await refreshDictionaries();
-        toast('账户类型已删除');
-      },
-    });
-  }
+  useEffect(() => {
+    if (opened) setSelected(PRESET_PROVIDERS.map(([name]) => name).filter((name) => !existingNames.has(name)));
+  }, [opened]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (providers.length === 0) {
-    return (
-      <div className="sheet">
-        <Empty title="还没有提供方">先在「提供方」里添加银行或支付平台</Empty>
-      </div>
-    );
-  }
+  const save = async () => {
+    setSaving(true);
+    try {
+      for (const [name, icon, types] of PRESET_PROVIDERS.filter(([presetName]) => selected.includes(presetName))) {
+        const existing = providers.find((provider) => provider.providerName === name);
+        const providerId = existing?.id || await api.providers.create({ providerName: name, icon });
+        const existingTypes = new Set(accountTypes.filter((type) => type.providerId === providerId).map((type) => type.typeName));
+        for (const [index, [typeName, typeCode]] of types.entries()) {
+          if (!existingTypes.has(typeName)) await api.accountTypes.create({ providerId, typeName, typeCode, sort: index });
+        }
+      }
+      notifySuccess('常用机构已添加');
+      onClose();
+    } catch (error) {
+      notifyError(error, '添加中断');
+    } finally {
+      await reload('providers', 'accountTypes');
+      setSaving(false);
+    }
+  };
 
   return (
-    <div>
-      {grouped.map(({ provider, list }, i) => (
-        <section className="sheet type-group reveal" style={{ '--i': i }} key={provider.id}>
-          <div className="type-group-head">
-            <ProviderAvatar provider={provider} size={30} />
-            {provider.providerName}
-            <button
-              type="button"
-              className="btn btn-ghost"
-              style={{ marginLeft: 'auto', height: 32, padding: '0 12px', fontSize: 13 }}
-              onClick={() => ui.editType(null, provider.id)}
-            >
-              <Plus size={14} />
-              添加类型
-            </button>
-          </div>
-          {list.length === 0 ? (
-            <div className="type-row" style={{ color: 'var(--muted)' }}>
-              暂无账户类型
-            </div>
-          ) : (
-            list.map((type) => (
-              <div className="type-row" key={type.id}>
-                <span style={{ fontWeight: 500 }}>{type.typeName}</span>
-                <NatureTag code={type.typeCode} />
-                <span className="hint num">排序 {type.sort ?? 0}</span>
-                <div className="row-actions">
-                  <button type="button" className="icon-btn" onClick={() => ui.editType(type)} aria-label="编辑账户类型">
-                    <Pencil size={15} />
-                  </button>
-                  <button type="button" className="icon-btn danger" onClick={() => remove(type)} aria-label="删除账户类型">
-                    <Trash2 size={15} />
-                  </button>
+    <Modal opened={opened} onClose={onClose} title={<Text fw={650} size="lg">添加常用机构</Text>}>
+      <Checkbox.Group value={selected} onChange={setSelected}>
+        <Stack gap="sm">
+          {PRESET_PROVIDERS.map(([name, icon, types]) => (
+            <Checkbox key={name} value={name} label={(
+              <Group gap="sm" wrap="nowrap">
+                <AccountAvatar account={{ providerName: name, providerIcon: icon }} size={26} radius="sm" />
+                <div>
+                  <Text size="sm" fw={550}>{name}{existingNames.has(name) && <Text span size="xs" c="dimmed"> · 已存在，补全缺少的类型</Text>}</Text>
+                  <Text size="xs" c="dimmed">{types.map(([typeName, code]) => `${typeName}（${ACCOUNT_KINDS[code].short}）`).join('、')}</Text>
                 </div>
-              </div>
-            ))
-          )}
-        </section>
-      ))}
-    </div>
+              </Group>
+            )} styles={{ body: { alignItems: 'center' } }} />
+          ))}
+        </Stack>
+      </Checkbox.Group>
+      <Group justify="flex-end" gap="sm" mt="lg">
+        <Button variant="default" onClick={onClose}>取消</Button>
+        <Button onClick={save} loading={saving} disabled={!selected.length}>添加 {selected.length} 个机构</Button>
+      </Group>
+    </Modal>
   );
 }
 
-function CategoriesTab() {
-  const { categoryIndex } = useStore();
-  const columns = [
-    ['EXPENSE', '支出分类', 'tone-ink'],
-    ['INCOME', '收入分类', 'tone-jade'],
-  ];
+export function SettingsPage() {
+  const { providers, accountTypes, accounts, reload } = useData();
+  const [selectedId, setSelectedId] = useState(null);
+  const [providerEditor, setProviderEditor] = useState({ opened: false, provider: null });
+  const [typeEditor, setTypeEditor] = useState({ opened: false, accountType: null });
+  const [presetOpened, setPresetOpened] = useState(false);
+  const [confirmState, setConfirmState] = useState(null);
+
+  const selected = providers.find((provider) => provider.id === selectedId) || providers[0];
+  const types = useMemo(() => accountTypes.filter((type) => type.providerId === selected?.id), [accountTypes, selected]);
+  const accountCount = (typeId) => accounts.filter((account) => account.typeId === typeId).length;
+
+  const removeProvider = (provider) => setConfirmState({
+    message: `确定删除机构「${provider.providerName}」？需要先删除它下面的账户类型。`,
+    onConfirm: async () => {
+      try {
+        await api.providers.remove([provider.id]);
+        notifySuccess('机构已删除');
+        setSelectedId(null);
+        await reload('providers');
+      } catch (error) {
+        notifyError(error, '删除失败');
+      }
+    },
+  });
+
+  const removeType = (accountType) => setConfirmState({
+    message: `确定删除账户类型「${accountType.typeName}」？已被账户使用的类型无法删除。`,
+    onConfirm: async () => {
+      try {
+        await api.accountTypes.remove([accountType.id]);
+        notifySuccess('账户类型已删除');
+        await reload('accountTypes');
+      } catch (error) {
+        notifyError(error, '删除失败');
+      }
+    },
+  });
+
   return (
     <>
-      <div className="category-cols">
-        {columns.map(([key, title, tone], i) => (
-          <section className="sheet category-col reveal" style={{ '--i': i }} key={key}>
-            <h3>
-              {title}
-              <span className={`tag ${tone}`}>{categoryIndex.tree[key]?.length ?? 0} 组</span>
-            </h3>
-            {(categoryIndex.tree[key] ?? []).map((group) => (
-              <div className="category-group" key={group.id}>
-                <span className="group-name">{group.categoryName}</span>
-                <div className="chips">
-                  {group.children.map((child) => (
-                    <span className="chip static" key={child.id}>
-                      {child.categoryName}
-                    </span>
+      <PageHeader
+        title="机构与类型"
+        emoji="🏦"
+        description="账户属于某个机构的某种类型，类型决定它是资产还是负债～"
+        actions={(
+          <>
+            <Button variant="default" leftSection={<Sparkles size={16} />} onClick={() => setPresetOpened(true)}>添加常用机构</Button>
+            <Button leftSection={<Plus size={16} />} onClick={() => setProviderEditor({ opened: true, provider: null })}>添加机构</Button>
+          </>
+        )}
+      />
+
+      {!providers.length ? (
+        <Card>
+          <EmptyState mood="calm" title="还没有机构" description="从常用的银行和支付平台开始吧，一键就能加好～"
+            action={<Button leftSection={<Sparkles size={16} />} onClick={() => setPresetOpened(true)}>添加常用机构</Button>} />
+        </Card>
+      ) : (
+        <Grid gutter="md">
+          <Grid.Col span={{ base: 12, md: 4 }}>
+            <Card p="xs">
+              <Text size="xs" c="dimmed" fw={600} px="sm" py={6}>机构 · {providers.length}</Text>
+              {providers.map((provider) => {
+                const count = accountTypes.filter((type) => type.providerId === provider.id).length;
+                return (
+                  <button key={provider.id} type="button" className="cc-provider-item" data-active={provider.id === selected?.id || undefined}
+                    onClick={() => setSelectedId(provider.id)}>
+                    <AccountAvatar account={{ providerName: provider.providerName, providerIcon: provider.icon }} size={32} radius="sm" />
+                    <Text size="sm" fw={550} style={{ flex: 1 }} className="cc-truncate">{provider.providerName}</Text>
+                    <Text size="xs" c="dimmed">{count} 个类型</Text>
+                  </button>
+                );
+              })}
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, md: 8 }}>
+            {selected && (
+              <Card p={0}>
+                <Group justify="space-between" p="lg" wrap="nowrap">
+                  <Group gap="sm" wrap="nowrap">
+                    <AccountAvatar account={{ providerName: selected.providerName, providerIcon: selected.icon }} size={40} />
+                    <div>
+                      <Text fw={650}>{selected.providerName}</Text>
+                      <Text size="xs" c="dimmed">{types.length} 个账户类型</Text>
+                    </div>
+                  </Group>
+                  <Group gap={6} wrap="nowrap">
+                    <Button size="xs" leftSection={<Plus size={14} />} onClick={() => setTypeEditor({ opened: true, accountType: null })}>添加类型</Button>
+                    <Tooltip label="编辑机构">
+                      <ActionIcon variant="default" size={30} onClick={() => setProviderEditor({ opened: true, provider: selected })}><Pencil size={15} /></ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="删除机构">
+                      <ActionIcon variant="default" size={30} color="red" onClick={() => removeProvider(selected)}><Trash2 size={15} /></ActionIcon>
+                    </Tooltip>
+                  </Group>
+                </Group>
+                <div style={{ borderTop: '1px solid var(--cc-border)' }}>
+                  {types.length === 0 ? (
+                    <EmptyState title="还没有账户类型" description="例如储蓄卡（资产）、信用卡（负债）。" py={36}
+                      action={<Button variant="light" size="xs" onClick={() => setTypeEditor({ opened: true, accountType: null })}>添加类型</Button>} />
+                  ) : types.map((type) => (
+                    <div className="cc-row" key={type.id}>
+                      <div className="cc-row-main">
+                        <Group gap={8}>
+                          <Text size="sm" fw={550}>{type.typeName}</Text>
+                          <Badge size="xs" color={type.typeCode === 'CREDIT' ? 'red' : 'teal'}>{ACCOUNT_KINDS[type.typeCode]?.label || type.typeCode}</Badge>
+                        </Group>
+                        <Text size="xs" c="dimmed" mt={2}>{accountCount(type.id) ? `${accountCount(type.id)} 个账户在用` : '暂无账户'} · 排序 {type.sort ?? 0}</Text>
+                      </div>
+                      <Group gap={4} wrap="nowrap">
+                        <ActionIcon variant="subtle" color="gray" aria-label="编辑类型" onClick={() => setTypeEditor({ opened: true, accountType: type })}><Pencil size={15} /></ActionIcon>
+                        <ActionIcon variant="subtle" color="gray" aria-label="删除类型" onClick={() => removeType(type)}><Trash2 size={15} /></ActionIcon>
+                      </Group>
+                    </div>
                   ))}
                 </div>
-              </div>
-            ))}
-          </section>
-        ))}
-      </div>
-      <div className="note">
-        <Info size={14} style={{ flex: 'none', marginTop: 2 }} />
-        预置分类，记账时一级、二级分类都可以直接选；分类的增删改接口暂未开放。
-      </div>
+              </Card>
+            )}
+          </Grid.Col>
+        </Grid>
+      )}
+
+      <ProviderModal opened={providerEditor.opened} provider={providerEditor.provider} onSaved={(id) => !providerEditor.provider && setSelectedId(id)}
+        onClose={() => setProviderEditor((current) => ({ ...current, opened: false }))} />
+      <TypeModal opened={typeEditor.opened} provider={selected} accountType={typeEditor.accountType}
+        onClose={() => setTypeEditor((current) => ({ ...current, opened: false }))} />
+      <PresetModal opened={presetOpened} onClose={() => setPresetOpened(false)} />
+      <ConfirmModal state={confirmState} onClose={() => setConfirmState(null)} />
     </>
-  );
-}
-
-const TABS = [
-  ['providers', '提供方'],
-  ['types', '账户类型'],
-  ['categories', '收支分类'],
-];
-
-export function SettingsPage({ ui }) {
-  const [tab, setTab] = useState('providers');
-  return (
-    <div className="page">
-      <header className="page-head reveal">
-        <div>
-          <div className="kicker">DICTIONARY</div>
-          <h1 className="page-title">账户字典</h1>
-          <p className="page-desc">提供方和类型决定账户的名称、图标和性质，修改后会同步到相关账户</p>
-        </div>
-      </header>
-      <div className="tabs reveal" style={{ '--i': 1 }} role="tablist">
-        {TABS.map(([key, label]) => (
-          <button type="button" key={key} role="tab" aria-selected={tab === key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)}>
-            {label}
-          </button>
-        ))}
-      </div>
-      {tab === 'providers' && <ProvidersTab ui={ui} />}
-      {tab === 'types' && <TypesTab ui={ui} />}
-      {tab === 'categories' && <CategoriesTab />}
-    </div>
   );
 }

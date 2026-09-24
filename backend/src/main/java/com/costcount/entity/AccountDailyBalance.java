@@ -36,12 +36,11 @@ public class AccountDailyBalance {
      */
     private BigDecimal openingBalance;
     /**
-     * 当日全部流水的余额变动，含余额调整；期末余额 = 期初余额 + 当日变动。
+     * 当日已入账流水的净变化。
      */
     private BigDecimal transactionChange;
     /**
-     * 当日变动中余额调整（ADJUSTMENT）的部分，是 transactionChange 的子集，
-     * 仅用于区分构成，不单独计入余额。
+     * 历史补录或重算产生的修正变化。
      */
     private BigDecimal correctionChange;
     /**

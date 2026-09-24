@@ -20,7 +20,7 @@ public class AccountType extends BaseEntity {
     /** 所属账户提供方 ID。 */
     private Long providerId;
 
-    /** 账户类型编码，例如 DEBIT、CREDIT。 */
+    /** 账户类型编码：DEBIT 存储账户、CREDIT 信用账户，决定余额方向。 */
     private String typeCode;
 
     /** 账户类型名称，例如储蓄卡、信用卡。 */

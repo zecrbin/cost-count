@@ -1,0 +1,14 @@
+// 按单个文件引入图标：直接 import 'lucide-react' 会让开发服务器加载全部 1500+ 个图标（约 4MB）。
+export { default as ArrowDownUp } from 'lucide-react/dist/esm/icons/arrow-down-up.mjs';
+export { default as ArrowRight } from 'lucide-react/dist/esm/icons/arrow-right.mjs';
+export { default as ChevronLeft } from 'lucide-react/dist/esm/icons/chevron-left.mjs';
+export { default as ChevronRight } from 'lucide-react/dist/esm/icons/chevron-right.mjs';
+export { default as Moon } from 'lucide-react/dist/esm/icons/moon.mjs';
+export { default as MoreHorizontal } from 'lucide-react/dist/esm/icons/ellipsis.mjs';
+export { default as Pencil } from 'lucide-react/dist/esm/icons/pencil.mjs';
+export { default as Plus } from 'lucide-react/dist/esm/icons/plus.mjs';
+export { default as RotateCcw } from 'lucide-react/dist/esm/icons/rotate-ccw.mjs';
+export { default as Search } from 'lucide-react/dist/esm/icons/search.mjs';
+export { default as Sparkles } from 'lucide-react/dist/esm/icons/sparkles.mjs';
+export { default as Sun } from 'lucide-react/dist/esm/icons/sun.mjs';
+export { default as Trash2 } from 'lucide-react/dist/esm/icons/trash-2.mjs';

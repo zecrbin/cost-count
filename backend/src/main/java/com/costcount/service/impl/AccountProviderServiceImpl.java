@@ -10,7 +10,7 @@ import com.costcount.exception.BizException;
 import com.costcount.mapper.AccountProviderMapper;
 import com.costcount.mapper.AccountTypeMapper;
 import com.costcount.service.AccountProviderService;
-import com.costcount.service.AccountService;
+import com.costcount.service.UploadedIconService;
 import com.costcount.vo.account.provider.AccountProviderVO;
 import com.github.yulichang.base.MPJBaseServiceImpl;
 import com.github.yulichang.wrapper.MPJLambdaWrapper;
@@ -32,7 +32,7 @@ public class AccountProviderServiceImpl
     private AccountTypeMapper accountTypeMapper;
 
     @Resource
-    private AccountService accountService;
+    private UploadedIconService uploadedIconService;
 
     @Override
     public List<AccountProviderVO> listAccountProviders(AccountProviderQueryDTO query) {
@@ -55,7 +55,11 @@ public class AccountProviderServiceImpl
         MPJLambdaWrapper<AccountProvider> wrapper = new MPJLambdaWrapper<>();
         wrapper.select(AccountProvider::getId, AccountProvider::getProviderName, AccountProvider::getIcon)
                 .eq(AccountProvider::getId, id);
-        return selectJoinOne(AccountProviderVO.class, wrapper);
+        AccountProviderVO provider = selectJoinOne(AccountProviderVO.class, wrapper);
+        if (provider == null) {
+            throw new BizException(404, "账户提供方不存在");
+        }
+        return provider;
     }
 
     @Override
@@ -83,6 +87,9 @@ public class AccountProviderServiceImpl
     public String updateAccountProvider(AccountProviderSaveDTO dto) {
         validateSaveDTO(dto);
         Long id = dto.getId();
+        if (id == null) {
+            throw new BizException(400, "账户提供方ID不能为空");
+        }
         String providerName = normalize(dto.getProviderName());
         ReentrantLock lock = AccountDictionaryWriteLock.acquire();
         try {
@@ -94,21 +101,11 @@ public class AccountProviderServiceImpl
                     .ne(AccountProvider::getId, id).exists()) {
                 throw new BizException(409, "账户提供方名称已存在");
             }
-            String icon = normalize(dto.getIcon());
-            // 账户名和账户图标由提供方名称、图标派生，任一变化都要同步到其下账户
-            boolean derivedChanged = !Objects.equals(provider.getProviderName(), providerName)
-                    || !Objects.equals(provider.getIcon(), icon);
+            String previousIcon = provider.getIcon();
             provider.setProviderName(providerName);
-            provider.setIcon(icon);
+            provider.setIcon(normalize(dto.getIcon()));
             updateById(provider);
-            if (derivedChanged) {
-                List<Long> typeIds = accountTypeMapper.selectList(new LambdaQueryWrapper<AccountType>()
-                                .eq(AccountType::getProviderId, id))
-                        .stream()
-                        .map(AccountType::getId)
-                        .toList();
-                accountService.refreshAccountsOfTypes(typeIds);
-            }
+            uploadedIconService.deleteReplacedIconAfterCommit(previousIcon, provider.getIcon());
             return String.valueOf(id);
         } finally {
             AccountDictionaryWriteLock.release(lock);
@@ -130,7 +127,9 @@ public class AccountProviderServiceImpl
             if (accountTypeMapper.selectCount(wrapper) > 0) {
                 throw new BizException(409, "账户提供方已关联账户类型，无法删除");
             }
+            List<AccountProvider> providers = listByIds(ids);
             removeByIds(ids);
+            providers.forEach(provider -> uploadedIconService.deleteReplacedIconAfterCommit(provider.getIcon(), null));
         } finally {
             AccountDictionaryWriteLock.release(lock);
         }

@@ -1,294 +1,136 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDownLeft, ArrowLeftRight, ArrowRight, Flag, LoaderCircle, Plus, RotateCcw, Scale, ArrowUpRight } from 'lucide-react';
-import { Empty, Loading, Money } from '../components/ui';
-import { useStore } from '../lib/store';
-import { api } from '../lib/api';
-import { dayKey, describeDay, isCredit, money, timeOf } from '../lib/format';
-
-const PAGE_SIZE = 30;
+import { Button, Card, Center, Group, Loader, SegmentedControl, Select, SimpleGrid, Text, TextInput } from '@mantine/core';
+import { Plus, Search } from '../lib/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchAllTransactions } from '../api';
+import { AccountSelect } from '../components/AccountSelect';
+import { EmptyState } from '../components/EmptyState';
+import { Money } from '../components/Money';
+import { MonthSwitcher } from '../components/MonthSwitcher';
+import { PageHeader } from '../components/PageHeader';
+import { TransactionList } from '../components/TransactionList';
+import { useData } from '../lib/data';
+import { useTransactionEditor } from '../lib/editor';
+import { currentMonth, monthRange, toNumber } from '../lib/format';
+import { CATEGORY_TYPES } from '../lib/meta';
+import { notifyError } from '../lib/notify';
 
 const TYPE_FILTERS = [
-  ['', '全部'],
-  ['EXPENSE', '支出'],
-  ['INCOME', '收入'],
-  ['TRANSFER', '转账'],
-  ['ADJUSTMENT', '调整'],
+  { value: 'ALL', label: '全部' },
+  { value: 'EXPENSE', label: '💸 支出' },
+  { value: 'INCOME', label: '💰 收入' },
+  { value: 'TRANSFER', label: '🔁 转账' },
+  { value: 'OTHER', label: '其他' },
 ];
 
-const TYPE_META = {
-  EXPENSE: { icon: ArrowUpRight, tone: 'tone-ink', title: '支出' },
-  INCOME: { icon: ArrowDownLeft, tone: 'tone-jade', title: '收入' },
-  TRANSFER: { icon: ArrowLeftRight, tone: 'tone-muted', title: '转账' },
-  ADJUSTMENT: { icon: Scale, tone: 'tone-gold', title: '余额调整' },
-  INITIAL: { icon: Flag, tone: 'tone-seal', title: '初始资金' },
-};
-
-/** 一笔流水在当前视角下的金额展示：筛选了账户时，转账按该账户是转出还是转入决定方向。 */
-function amountView(tx, viewAccount) {
-  const amount = Number(tx.amount || 0);
-  switch (tx.transactionType) {
-    case 'INCOME':
-      return { sign: '+', className: 'amount-in', value: amount };
-    case 'EXPENSE':
-      return { sign: '−', className: 'amount-out', value: amount };
-    case 'ADJUSTMENT': {
-      const change = Number(tx.balanceChange || 0);
-      return { sign: change < 0 ? '−' : '+', className: 'amount-adjust', value: change };
-    }
-    case 'TRANSFER':
-      if (viewAccount && viewAccount === tx.targetAccountId) return { sign: '+', className: 'amount-in', value: amount };
-      if (viewAccount && viewAccount === tx.accountId) return { sign: '−', className: 'amount-out', value: amount };
-      return { sign: '', className: 'amount-neutral', value: amount };
-    default:
-      return { sign: '', className: 'amount-neutral', value: amount };
-  }
-}
-
-function TxRow({ tx, viewAccount, categoryIndex }) {
-  const meta = TYPE_META[tx.transactionType] ?? TYPE_META.EXPENSE;
-  const Icon = meta.icon;
-  const category = tx.categoryId ? categoryIndex.byId.get(tx.categoryId) : null;
-  const view = amountView(tx, viewAccount);
-  const sub = [tx.counterparty, tx.remark].filter(Boolean).join(' · ');
-  const showAfter = viewAccount && tx.accountId === viewAccount && tx.balanceAfter != null;
-
+function SummaryItem({ label, children }) {
   return (
-    <div className="tx">
-      <div className="tx-time num">{timeOf(tx.transactionTime)}</div>
-      <div className={`tx-badge ${meta.tone}`}>
-        <Icon size={17} />
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div className="tx-title">
-          {category ? category.name : meta.title}
-          {category?.parentName && <span className="parent">{category.parentName}</span>}
-        </div>
-        <div className="tx-sub">{sub || (category ? meta.title : '—')}</div>
-      </div>
-      <div className="tx-account">
-        <span>{tx.accountName}</span>
-        {tx.transactionType === 'TRANSFER' && (
-          <>
-            <ArrowRight size={13} style={{ flex: 'none' }} />
-            <span>{tx.targetAccountName}</span>
-          </>
-        )}
-      </div>
-      <div className="tx-amount">
-        <div className={`value ${view.className}`}>
-          <Money value={view.value} sign={view.sign} />
-        </div>
-        {showAfter && <div className="after num">余额 {money(tx.balanceAfter)}</div>}
-      </div>
+    <div>
+      <Text className="cc-stat-label">{label}</Text>
+      <div style={{ marginTop: 4 }}>{children}</div>
     </div>
   );
 }
 
-function DayBlock({ dayKeyValue, rows, index, viewAccount, categoryIndex }) {
-  const { day, month, relative } = describeDay(dayKeyValue);
-  let income = 0;
-  let expense = 0;
-  for (const tx of rows) {
-    if (tx.transactionType === 'INCOME') income += Number(tx.amount || 0);
-    if (tx.transactionType === 'EXPENSE') expense += Number(tx.amount || 0);
-  }
-  return (
-    <section className="sheet day reveal" style={{ '--i': Math.min(index, 8) }}>
-      <div className="day-head">
-        <div className="day-num num">{day}</div>
-        <div className="day-meta">
-          <strong>{relative}</strong>
-          {month}
-        </div>
-        <div className="day-sum">
-          {income > 0 && (
-            <span>
-              收 <b className="num amount-in">+{money(income)}</b>
-            </span>
-          )}
-          {expense > 0 && (
-            <span>
-              支 <b className="num">−{money(expense)}</b>
-            </span>
-          )}
-        </div>
-      </div>
-      {rows.map((tx) => (
-        <TxRow key={tx.id} tx={tx} viewAccount={viewAccount} categoryIndex={categoryIndex} />
-      ))}
-    </section>
-  );
-}
+export function TransactionsPage() {
+  const { categories, categoryMap, ledgerVersion } = useData();
+  const { openTransaction } = useTransactionEditor();
+  const [month, setMonth] = useState(currentMonth);
+  const [type, setType] = useState('ALL');
+  const [accountId, setAccountId] = useState(null);
+  const [categoryId, setCategoryId] = useState(null);
+  const [keyword, setKeyword] = useState('');
+  const [records, setRecords] = useState(null);
 
-export function TransactionsPage({ initialAccountId, ui }) {
-  const { accounts, categoryIndex, ledgerVersion } = useStore();
-  const [accountId, setAccountId] = useState(initialAccountId ?? '');
-  const [type, setType] = useState('');
-  const [start, setStart] = useState('');
-  const [end, setEnd] = useState('');
-  const [records, setRecords] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [pageNum, setPageNum] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState(null);
-  const requestVersion = useRef(0);
-
-  const params = useMemo(
-    () => ({
-      accountId: accountId || null,
-      transactionType: type || null,
-      startTime: start ? `${start}T00:00:00` : null,
-      endTime: end ? `${end}T23:59:59` : null,
-    }),
-    [accountId, type, start, end],
-  );
-
+  // 按月和账户、类型在服务端过滤；分类（含一级分类下全部明细）和关键词在本地过滤。
   useEffect(() => {
     let cancelled = false;
-    requestVersion.current += 1;
-    setLoading(true);
-    setLoadingMore(false);
-    setError(null);
-    api
-      .pageTransactions(1, PAGE_SIZE, params)
-      .then((page) => {
-        if (cancelled) return;
-        setRecords(page.records);
-        setTotal(page.total);
-        setPageNum(1);
-      })
-      .catch((err) => !cancelled && setError(err.message))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [params, ledgerVersion]);
+    const { startTime, endTime } = monthRange(month);
+    const transactionType = ['ALL', 'OTHER'].includes(type) ? undefined : type;
+    setRecords(null);
+    fetchAllTransactions({ startTime, endTime, accountId: accountId || undefined, transactionType })
+      .then((result) => { if (!cancelled) setRecords(result); })
+      .catch((error) => { if (!cancelled) { setRecords([]); notifyError(error, '加载流水失败'); } });
+    return () => { cancelled = true; };
+  }, [month, type, accountId, ledgerVersion]);
 
-  async function loadMore() {
-    const version = requestVersion.current;
-    setLoadingMore(true);
-    try {
-      const page = await api.pageTransactions(pageNum + 1, PAGE_SIZE, params);
-      if (version !== requestVersion.current) return;
-      setRecords((list) => [...list, ...page.records]);
-      setTotal(page.total);
-      setPageNum(pageNum + 1);
-    } catch (err) {
-      if (version === requestVersion.current) setError(err.message);
-    } finally {
-      if (version === requestVersion.current) setLoadingMore(false);
-    }
-  }
+  const categoryOptions = useMemo(() => CATEGORY_TYPES.map(({ value, label }) => ({
+    group: label,
+    items: categories.filter((root) => root.categoryType === value).flatMap((root) => [
+      { value: root.id, label: root.children?.length ? `${root.categoryName}（全部）` : root.categoryName },
+      ...(root.children || []).map((child) => ({ value: child.id, label: `${root.categoryName} / ${child.categoryName}` })),
+    ]),
+  })).filter((group) => group.items.length), [categories]);
 
-  const days = useMemo(() => {
-    const map = new Map();
-    for (const tx of records) {
-      const key = dayKey(tx.transactionTime);
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(tx);
-    }
-    return [...map.entries()];
-  }, [records]);
+  const filtered = useMemo(() => {
+    if (!records) return null;
+    const text = keyword.trim().toLowerCase();
+    return records.filter((item) => {
+      if (type === 'OTHER' && !['ADJUSTMENT', 'INITIAL'].includes(item.transactionType)) return false;
+      if (categoryId) {
+        const category = categoryMap.get(item.categoryId);
+        if (!category || (category.id !== categoryId && category.root?.id !== categoryId)) return false;
+      }
+      if (text) {
+        const haystack = [item.counterparty, item.remark, item.categoryName, item.accountName, item.targetAccountName]
+          .filter(Boolean).join(' ').toLowerCase();
+        if (!haystack.includes(text)) return false;
+      }
+      return true;
+    });
+  }, [records, type, categoryId, keyword, categoryMap]);
 
-  const filtered = accountId || type || start || end;
-  const selected = accounts.find((a) => a.id === accountId);
+  const summary = useMemo(() => {
+    const list = filtered || [];
+    const sum = (kind) => list.filter((item) => item.transactionType === kind).reduce((total, item) => total + toNumber(item.amount), 0);
+    const income = sum('INCOME');
+    const expense = sum('EXPENSE');
+    return { income, expense, balance: income - expense, count: list.length };
+  }, [filtered]);
+
+  const hasFilters = type !== 'ALL' || accountId || categoryId || keyword;
 
   return (
-    <div className="page">
-      <header className="page-head reveal">
-        <div>
-          <div className="kicker">LEDGER</div>
-          <h1 className="page-title">流水账</h1>
-          {selected && (
-            <p className="page-desc">
-              {selected.accName} · 当前{isCredit(selected.typeCode) ? '待还' : '余额'} ¥ {money(selected.balance)}
-            </p>
-          )}
-        </div>
-        <button type="button" className="btn btn-primary" onClick={() => ui.recordTransaction(accountId || undefined)}>
-          <Plus size={16} />
-          记一笔
-        </button>
-      </header>
+    <>
+      <PageHeader
+        title="流水"
+        emoji="🧾"
+        description="每一笔都在这里，点一下就能修改或删除～"
+        actions={<Button visibleFrom="sm" leftSection={<Plus size={16} />} onClick={() => openTransaction()}>记一笔</Button>}
+      />
 
-      <div className="sheet toolbar reveal" style={{ '--i': 1 }}>
-        <select className="control" value={accountId} onChange={(e) => setAccountId(e.target.value)} aria-label="按账户筛选">
-          <option value="">全部账户</option>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.accName}
-            </option>
-          ))}
-        </select>
-        <div className="segmented" role="group" aria-label="按类型筛选">
-          {TYPE_FILTERS.map(([key, label]) => (
-            <button type="button" key={key || 'all'} className={type === key ? 'active' : ''} onClick={() => setType(key)}>
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="grow" />
-        <div className="date-range">
-          <input type="date" className="control" value={start} max={end || undefined} onChange={(e) => setStart(e.target.value)} aria-label="开始日期" />
-          至
-          <input type="date" className="control" value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} aria-label="结束日期" />
-        </div>
-        {filtered && (
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => {
-              setAccountId('');
-              setType('');
-              setStart('');
-              setEnd('');
-            }}
-          >
-            <RotateCcw size={15} />
-            重置
-          </button>
+      <Card mb="md">
+        <Group justify="space-between" gap="md">
+          <MonthSwitcher value={month} onChange={setMonth} />
+          <SegmentedControl data={TYPE_FILTERS} value={type} onChange={setType} size="sm" />
+        </Group>
+        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" mt="md">
+          <AccountSelect placeholder="全部账户" clearable value={accountId} onChange={setAccountId}
+            includeIds={accountId ? [accountId] : []} />
+          <Select placeholder="全部分类" clearable searchable data={categoryOptions} value={categoryId} onChange={setCategoryId}
+            nothingFoundMessage="没有匹配的分类" />
+          <TextInput placeholder="搜索交易对象、备注" leftSection={<Search size={15} />} value={keyword}
+            onChange={(event) => setKeyword(event.currentTarget.value)} />
+        </SimpleGrid>
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md" mt="lg" pt="md" style={{ borderTop: '1px dashed var(--cc-border)' }}>
+          <SummaryItem label="💰 收入"><Money value={summary.income} tone="income" size="xl" /></SummaryItem>
+          <SummaryItem label="💸 支出"><Money value={summary.expense} tone="expense" size="xl" /></SummaryItem>
+          <SummaryItem label="🐷 结余"><Money value={summary.balance} sign size="xl" /></SummaryItem>
+          <SummaryItem label="📝 笔数"><Text size="xl" className="num">{summary.count}</Text></SummaryItem>
+        </SimpleGrid>
+      </Card>
+
+      <Card p={0} style={{ overflow: 'hidden' }}>
+        {filtered === null ? (
+          <Center h={240}><Loader size="sm" /></Center>
+        ) : filtered.length === 0 ? (
+          <EmptyState mood={hasFilters ? 'calm' : 'sleepy'} title={hasFilters ? '没找到符合条件的流水' : '这个月还空空的'}
+            description={hasFilters ? '换个筛选条件或切换月份试试？' : '记下第一笔，小猪就醒啦～'}
+            action={!hasFilters && <Button variant="light" leftSection={<Plus size={16} />} onClick={() => openTransaction()}>记一笔</Button>} />
+        ) : (
+          <TransactionList transactions={filtered} onSelect={openTransaction} showBalance={Boolean(accountId)}
+            perspectiveAccountId={accountId} />
         )}
-      </div>
-
-      {error && <div className="banner">{error}</div>}
-
-      {loading ? (
-        <Loading />
-      ) : records.length === 0 ? (
-        <div className="sheet">
-          <Empty
-            title={filtered ? '没有符合条件的流水' : '还没有流水'}
-            action={
-              !filtered && (
-                <button type="button" className="btn btn-primary" onClick={() => ui.recordTransaction()}>
-                  <Plus size={16} />
-                  记第一笔
-                </button>
-              )
-            }
-          >
-            {filtered ? '换个筛选条件试试' : '收入、支出、转账都从「记一笔」开始'}
-          </Empty>
-        </div>
-      ) : (
-        <>
-          {days.map(([key, rows], i) => (
-            <DayBlock key={key} dayKeyValue={key} rows={rows} index={i + 2} viewAccount={accountId} categoryIndex={categoryIndex} />
-          ))}
-          <div className="list-foot">
-            <span>
-              已显示 {records.length} / {total} 笔
-            </span>
-            {records.length < total && (
-              <button type="button" className="btn" onClick={loadMore} disabled={loadingMore}>
-                {loadingMore && <LoaderCircle size={15} className="spin" />}
-                加载更多
-              </button>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+      </Card>
+    </>
   );
 }

@@ -1,6 +1,8 @@
 package com.costcount.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -27,11 +29,13 @@ public class Transaction extends BaseEntity {
 
     /** INITIAL、INCOME、EXPENSE、TRANSFER 或 ADJUSTMENT。 */
     private String transactionType;
-    /** 收入或支出分类 ID；初始化和余额调整流水可为空。 */
+    /** 收入或支出分类 ID；初始化和余额调整流水可为空。修改流水类型时允许清空。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long categoryId;
     /** 主账户；转账时表示转出账户。 */
     private Long accountId;
-    /** 转账目标账户，非转账流水为空。 */
+    /** 转账目标账户，非转账流水为空。修改流水类型时允许清空。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long targetAccountId;
     /** 正数业务金额。 */
     private BigDecimal amount;
@@ -41,7 +45,8 @@ public class Transaction extends BaseEntity {
     private BigDecimal balanceAfter;
     /** 业务发生时间。 */
     private LocalDateTime transactionTime;
-    /** 交易对象或商户。 */
+    /** 交易对象或商户；更新时允许显式清空。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String counterparty;
     /** MANUAL、IMPORT、AI 或 SYSTEM。 */
     private String source;

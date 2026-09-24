@@ -6,10 +6,15 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.FieldError;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -58,6 +63,25 @@ public class GlobalExceptionHandler {
     public R<Void> handleMessageNotReadableException(HttpMessageNotReadableException exception) {
         log.error("请求参数格式错误", exception);
         return R.fail(400, "请求参数格式错误，请检查枚举值和字段类型");
+    }
+
+    /** 静态资源（如图标）不存在时返回真正的 404，而不是被兜底为 200 的"系统繁忙"。 */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public R<Void> handleNoResourceFoundException(NoResourceFoundException exception) {
+        log.warn("资源不存在：{}", exception.getResourcePath());
+        return R.fail(404, "资源不存在");
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public R<Void> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException exception) {
+        log.warn("上传文件过大", exception);
+        return R.fail(400, "图片不能超过 2MB");
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public R<Void> handleMissingServletRequestPartException(MissingServletRequestPartException exception) {
+        return R.fail(400, "请选择要上传的图片");
     }
 
     @ExceptionHandler(Exception.class)

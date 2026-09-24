@@ -30,6 +30,12 @@ spring:
     init:
       mode: never
 
+  servlet:
+    multipart:
+      # 图标上传上限 2MB，由业务层给出中文提示；这里略放宽以便校验逻辑先执行。
+      max-file-size: 3MB
+      max-request-size: 4MB
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
@@ -61,3 +67,10 @@ app:
   storage:
     # 运行时生成的账户图标目录，可通过环境变量覆盖。
     account-icon-dir: ${ACCOUNT_ICON_DIR:data/account-icons}
+    # 用户上传的机构、账户图标目录，可通过环境变量覆盖。
+    uploaded-icon-dir: ${UPLOADED_ICON_DIR:data/uploaded-icons}
+    uploaded-icon-cleanup:
+      # 每次启动完成后清理未被机构或账户使用的上传图标。
+      enabled: ${UPLOADED_ICON_CLEANUP_ENABLED:true}
+      # 上传后至少保留的时长，避免删掉弹窗里刚上传、还没保存的图片。
+      retention: 24h

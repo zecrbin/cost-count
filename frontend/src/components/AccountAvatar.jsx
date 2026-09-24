@@ -1,55 +1,34 @@
+import { Avatar } from '@mantine/core';
 import { useState } from 'react';
+import { accountIconUrl, colorFromText } from '../lib/meta';
 
-// 和后端兜底图标一样按名称哈希取色相，同一提供方颜色稳定
-function hue(name) {
-  let hash = 0;
-  for (const ch of name) hash = (hash * 31 + ch.codePointAt(0)) | 0;
-  return ((hash % 360) + 360) % 360;
-}
-
-function Fallback({ name, size }) {
-  const text = (name || '账').trim();
-  return (
-    <div
-      className="avatar avatar-fallback"
-      style={{ width: size, height: size, fontSize: size * 0.42, background: `hsl(${hue(text)} 38% 42%)` }}
-      aria-hidden="true"
-    >
-      {text.slice(0, 1)}
-    </div>
-  );
-}
-
-/**
- * 账户头像：优先用系统生成的账户图标（提供方图标 + 尾号），
- * 没有尾号时用提供方图标，都没有或加载失败时退回首字色块。
- */
-export function AccountAvatar({ account, size = 48 }) {
-  // 后端每次重绘图标都会换新文件名，路径变了浏览器自然会取新图，不需要额外绕缓存
-  const sources = [];
-  if (account.icon) sources.push(`/icons/${account.icon}`);
-  if (account.providerIcon) sources.push(`/icons/default/${account.providerIcon}`);
-  return <ImageStack sources={sources} name={account.providerName || account.accName} size={size} />;
-}
-
-export function ProviderAvatar({ provider, size = 44 }) {
-  const sources = provider.icon ? [`/icons/default/${provider.icon}`] : [];
-  return <ImageStack sources={sources} name={provider.providerName} size={size} />;
-}
-
-function ImageStack({ sources, name, size }) {
-  const [failed, setFailed] = useState(0);
-  const key = sources.join('|');
-  const [lastKey, setLastKey] = useState(key);
-  if (key !== lastKey) {
-    setLastKey(key);
-    setFailed(0);
+/** 账户头像：优先使用账户/内置/机构图标，加载失败或没有图标时显示名称首字。 */
+export function AccountAvatar({ account, size = 40, radius = 'lg' }) {
+  const url = accountIconUrl(account);
+  const [failedUrl, setFailedUrl] = useState(null);
+  const name = account?.providerName || account?.accName || '?';
+  if (url && failedUrl !== url) {
+    // 系统生成的银行卡图标是 8:5 的卡面，按卡片比例显示，避免被压成方形。
+    if (account?.icon?.startsWith('accounts/')) {
+      return (
+        <img src={url} alt={account.accName} onError={() => setFailedUrl(url)}
+          style={{ width: size, height: Math.round(size * 0.625), borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} />
+      );
+    }
+    return (
+      <Avatar src={url} size={size} radius={radius} alt={account?.accName} imageProps={{ onError: () => setFailedUrl(url) }}
+        styles={{ image: { objectFit: 'contain' } }} />
+    );
   }
-  const src = sources[failed];
-  if (!src) return <Fallback name={name} size={size} />;
+  const color = colorFromText(name);
   return (
-    <div className="avatar" style={{ width: size, height: size, borderRadius: size * 0.27 }}>
-      <img src={src} alt="" loading="lazy" onError={() => setFailed((n) => n + 1)} />
-    </div>
+    <Avatar size={size} radius={radius} variant="filled" styles={{
+      placeholder: {
+        background: `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 55%, #ffffff))`,
+        color: '#fff', fontWeight: 900, fontSize: Math.round(size * 0.42),
+      },
+    }}>
+      {name.slice(0, 1)}
+    </Avatar>
   );
 }

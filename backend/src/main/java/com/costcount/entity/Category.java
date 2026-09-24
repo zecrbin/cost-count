@@ -1,6 +1,8 @@
 package com.costcount.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -24,7 +26,8 @@ public class Category extends BaseEntity {
     private String categoryType;
     /** 分类展示名称。 */
     private String categoryName;
-    /** 分类图标路径或图标标识。 */
+    /** 分类图标路径或图标标识；更新时允许显式清空。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String icon;
     /** 同层级展示顺序。 */
     private Integer sort;

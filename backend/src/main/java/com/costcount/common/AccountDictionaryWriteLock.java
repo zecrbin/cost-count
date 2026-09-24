@@ -6,9 +6,10 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
- * 账户提供方和账户类型写操作共享的 JVM 锁。
+ * 账户字典、账户、分类和流水写操作共享的 JVM 锁。
  *
- * <p>当前应用按单实例部署时，用同一把锁协调两个字典服务的并发写入。
+ * <p>当前应用按单实例部署时，用同一把锁串行化所有会影响账户余额或引用关系的写入：
+ * 字典删除前的引用检查、流水保存前的账户与分类校验、余额回放都在锁内完成。
  * 多实例部署时必须替换为 Redis 或数据库分布式锁，否则不同实例之间无法互斥。</p>
  */
 public final class AccountDictionaryWriteLock {
